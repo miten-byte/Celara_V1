@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Sparkles, Atom, Heart, Shield } from "lucide-react-native";
+import { ChevronRight, Sparkles, Heart, Shield, Gem } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
@@ -79,7 +79,9 @@ export default function HomeScreen() {
           >
             <View style={styles.brandContainer}>
               <View style={styles.logoContainer}>
-                <Atom color={Colors.light.secondary} size={40} strokeWidth={1.5} />
+                <View style={styles.logoCircle}>
+                  <View style={styles.logoInnerCircle} />
+                </View>
               </View>
               <Text style={styles.brandName}>CELARA</Text>
               <Text style={styles.tagline}>Crafted by Science. Worn with Soul.</Text>
@@ -105,21 +107,21 @@ export default function HomeScreen() {
         <View style={styles.valuesSection}>
           <View style={styles.valueCard}>
             <View style={styles.valueIconContainer}>
-              <Atom color={Colors.light.primary} size={24} strokeWidth={2} />
+              <Gem color={Colors.light.primary} size={24} strokeWidth={1.5} />
             </View>
             <Text style={styles.valueTitle}>Lab-Grown</Text>
             <Text style={styles.valueText}>Sustainably created with precision</Text>
           </View>
           <View style={styles.valueCard}>
             <View style={styles.valueIconContainer}>
-              <Shield color={Colors.light.primary} size={24} strokeWidth={2} />
+              <Shield color={Colors.light.primary} size={24} strokeWidth={1.5} />
             </View>
             <Text style={styles.valueTitle}>Certified</Text>
             <Text style={styles.valueText}>IGI & GIA certified diamonds</Text>
           </View>
           <View style={styles.valueCard}>
             <View style={styles.valueIconContainer}>
-              <Heart color={Colors.light.primary} size={24} strokeWidth={2} />
+              <Heart color={Colors.light.primary} size={24} strokeWidth={1.5} />
             </View>
             <Text style={styles.valueTitle}>Ethical</Text>
             <Text style={styles.valueText}>Conflict-free & eco-friendly</Text>
@@ -170,40 +172,50 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(212, 175, 55, 0.15)',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.3)',
+    marginBottom: 24,
+  },
+  logoCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: Colors.light.secondary,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  logoInnerCircle: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.light.secondary,
   },
   brandName: {
-    fontSize: 42,
-    fontWeight: '300' as const,
+    fontSize: 40,
+    fontWeight: '200' as const,
     color: Colors.light.white,
-    letterSpacing: 8,
-    marginBottom: 8,
+    letterSpacing: 12,
+    marginBottom: 12,
   },
   tagline: {
-    fontSize: 13,
+    fontSize: 11,
     color: Colors.light.secondary,
-    letterSpacing: 2,
+    letterSpacing: 3,
     textTransform: 'uppercase' as const,
-    fontWeight: '500' as const,
+    fontWeight: '400' as const,
+    opacity: 0.9,
   },
   heroContent: {
     alignItems: 'center' as const,
   },
   heroTitle: {
-    fontSize: 32,
-    fontWeight: '600' as const,
+    fontSize: 34,
+    fontWeight: '300' as const,
     color: Colors.light.white,
     textAlign: 'center' as const,
     marginBottom: 16,
-    letterSpacing: -0.5,
+    letterSpacing: 2,
   },
   heroSubtitle: {
     fontSize: 15,
@@ -264,11 +276,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   valueTitle: {
-    fontSize: 13,
-    fontWeight: '700' as const,
+    fontSize: 12,
+    fontWeight: '500' as const,
     color: Colors.light.text,
     marginBottom: 4,
-    letterSpacing: 0.3,
+    letterSpacing: 1,
   },
   valueText: {
     fontSize: 11,
@@ -287,10 +299,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 24,
-    fontWeight: '700' as const,
+    fontSize: 22,
+    fontWeight: '300' as const,
     color: Colors.light.text,
     marginBottom: 16,
+    letterSpacing: 1,
   },
   viewAllText: {
     fontSize: 14,

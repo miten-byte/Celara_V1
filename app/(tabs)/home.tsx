@@ -79,9 +79,11 @@ export default function HomeScreen() {
           >
             <View style={styles.brandContainer}>
               <View style={styles.logoContainer}>
-                <View style={styles.logoCircle}>
-                  <View style={styles.logoInnerCircle} />
-                </View>
+                <Image 
+                  source={{ uri: 'https://r2-pub.rork.com/generated-images/fa2e1967-a878-4c6f-a5b9-1cc78449eead.png' }}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.brandName}>CELARA</Text>
               <Text style={styles.tagline}>Crafted by Science. Worn with Soul.</Text>
@@ -174,22 +176,13 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    marginBottom: 24,
+    marginBottom: 20,
+    width: 80,
+    height: 80,
   },
-  logoCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 1.5,
-    borderColor: Colors.light.secondary,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  logoInnerCircle: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.light.secondary,
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   brandName: {
     fontSize: 40,

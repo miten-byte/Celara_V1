@@ -1,6 +1,7 @@
 import { createTRPCRouter } from "./create-context";
 import { hiProcedure } from "./routes/example/hi/route";
 import { loginProcedure } from "./routes/admin/login/route";
+import { checkDbProcedure } from "./routes/admin/check-db/route";
 import { signupProcedure } from "./routes/auth/signup/route";
 import { userLoginProcedure } from "./routes/auth/login/route";
 import { listProductsProcedure } from "./routes/products/list/route";
@@ -19,6 +20,7 @@ export const appRouter = createTRPCRouter({
   }),
   admin: createTRPCRouter({
     login: loginProcedure,
+    checkDb: checkDbProcedure,
   }),
   products: createTRPCRouter({
     list: listProductsProcedure,

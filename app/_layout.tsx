@@ -22,6 +22,7 @@ function RootLayoutNav() {
       <Stack.Screen name="auth/login" options={{ headerShown: false }} />
       <Stack.Screen name="admin/login" options={{ title: "Admin Login" }} />
       <Stack.Screen name="admin/dashboard" options={{ title: "Admin Dashboard" }} />
+      <Stack.Screen name="admin/check-db" options={{ headerShown: false }} />
     </Stack>
   );
 }

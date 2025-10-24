@@ -15,7 +15,7 @@ import { useRouter } from 'expo-router';
 import { trpc } from '@/lib/trpc';
 import { useAdmin } from '@/contexts/AdminContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Lock, Mail } from 'lucide-react-native';
+import { Lock, Mail, Database } from 'lucide-react-native';
 
 export default function AdminLoginScreen() {
   const [email, setEmail] = useState('');
@@ -104,6 +104,14 @@ export default function AdminLoginScreen() {
               <Text style={styles.infoCredentials}>Email: admin@jewelry.com</Text>
               <Text style={styles.infoCredentials}>Password: admin123</Text>
             </View>
+
+            <TouchableOpacity
+              style={styles.checkDbButton}
+              onPress={() => router.push('/admin/check-db' as any)}
+            >
+              <Database size={20} color="#d4af37" />
+              <Text style={styles.checkDbText}>Check Database Status</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -217,5 +225,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'monospace',
     marginTop: 4,
+  },
+  checkDbButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(212, 175, 55, 0.1)',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+  },
+  checkDbText: {
+    color: '#d4af37',
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });

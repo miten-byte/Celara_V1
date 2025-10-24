@@ -3,9 +3,10 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 
 export interface JWTPayload {
-  adminId: string;
+  adminId?: string;
+  userId?: string;
   email: string;
-  role: string;
+  role?: string;
 }
 
 export function generateToken(payload: JWTPayload): string {

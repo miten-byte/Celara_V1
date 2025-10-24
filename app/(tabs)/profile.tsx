@@ -18,9 +18,11 @@ import {
   Shield,
   ChevronRight,
   Lock,
+  LogOut,
 } from "lucide-react-native";
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUser } from '@/contexts/UserContext';
 
 import Colors from "@/constants/colors";
 
@@ -33,6 +35,16 @@ interface MenuItem {
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user, logout } = useUser();
+
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/auth/login' as any);
+  };
+
+  const handleSignIn = () => {
+    router.push('/auth/login' as any);
+  };
 
   const menuSections: { title: string; items: MenuItem[] }[] = [
     {
@@ -126,13 +138,22 @@ export default function ProfileScreen() {
             <User color={Colors.light.white} size={32} />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Guest User</Text>
-            <Text style={styles.profileEmail}>Sign in to save your preferences</Text>
+            <Text style={styles.profileName}>{user ? user.name : 'Guest User'}</Text>
+            <Text style={styles.profileEmail}>
+              {user ? user.email : 'Sign in to save your preferences'}
+            </Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.signInButton}>
-          <Text style={styles.signInButtonText}>Sign In</Text>
-        </TouchableOpacity>
+        {user ? (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <LogOut color={Colors.light.white} size={18} />
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.signInButton} onPress={handleSignIn}>
+            <Text style={styles.signInButtonText}>Sign In</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -199,6 +220,21 @@ const styles = StyleSheet.create({
     alignItems: 'center' as const,
   },
   signInButtonText: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.light.white,
+  },
+  logoutButton: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    alignItems: 'center' as const,
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+  },
+  logoutButtonText: {
     fontSize: 16,
     fontWeight: '600' as const,
     color: Colors.light.white,

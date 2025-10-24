@@ -52,19 +52,23 @@ export default function AuthScreen() {
   });
 
   const handleSubmit = () => {
-    if (!email || !password) {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const trimmedName = name.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
       Alert.alert('Error', 'Please enter email and password');
       return;
     }
 
     if (isSignup) {
-      if (!name) {
+      if (!trimmedName) {
         Alert.alert('Error', 'Please enter your name');
         return;
       }
-      signupMutation.mutate({ email, password, name });
+      signupMutation.mutate({ email: trimmedEmail, password: trimmedPassword, name: trimmedName });
     } else {
-      loginMutation.mutate({ email, password });
+      loginMutation.mutate({ email: trimmedEmail, password: trimmedPassword });
     }
   };
 

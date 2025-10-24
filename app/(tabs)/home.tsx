@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Sparkles } from "lucide-react-native";
+import { ChevronRight, Sparkles, Atom, Heart, Shield } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
@@ -72,26 +72,58 @@ export default function HomeScreen() {
       >
         <View style={styles.heroSection}>
           <LinearGradient
-            colors={[Colors.light.primary, '#0F2952']}
+            colors={['#1A0B2E', '#4A0E4E', '#1A0B2E']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.heroGradient}
           >
-            <View style={styles.heroContent}>
-              <View style={styles.heroIconContainer}>
-                <Sparkles color={Colors.light.secondary} size={32} />
+            <View style={styles.brandContainer}>
+              <View style={styles.logoContainer}>
+                <Atom color={Colors.light.secondary} size={40} strokeWidth={1.5} />
               </View>
-              <Text style={styles.heroTitle}>Timeless Elegance</Text>
+              <Text style={styles.brandName}>CELARA</Text>
+              <Text style={styles.tagline}>Crafted by Science. Worn with Soul.</Text>
+            </View>
+
+            <View style={styles.heroContent}>
+              <Text style={styles.heroTitle}>Lab-Grown Luxury</Text>
               <Text style={styles.heroSubtitle}>
-                Discover lab-grown and natural diamonds
+                Ethically created diamonds that match nature&apos;s perfection.
+                {"\n"}Same fire. Same brilliance. Better future.
               </Text>
               <TouchableOpacity
                 style={styles.heroButton}
                 onPress={() => router.push('/(tabs)/shop')}
               >
-                <Text style={styles.heroButtonText}>Shop Diamonds</Text>
-                <ChevronRight color={Colors.light.primary} size={20} />
+                <Text style={styles.heroButtonText}>Explore Collection</Text>
+                <Sparkles color={Colors.light.primary} size={18} />
               </TouchableOpacity>
             </View>
           </LinearGradient>
+        </View>
+
+        <View style={styles.valuesSection}>
+          <View style={styles.valueCard}>
+            <View style={styles.valueIconContainer}>
+              <Atom color={Colors.light.primary} size={24} strokeWidth={2} />
+            </View>
+            <Text style={styles.valueTitle}>Lab-Grown</Text>
+            <Text style={styles.valueText}>Sustainably created with precision</Text>
+          </View>
+          <View style={styles.valueCard}>
+            <View style={styles.valueIconContainer}>
+              <Shield color={Colors.light.primary} size={24} strokeWidth={2} />
+            </View>
+            <Text style={styles.valueTitle}>Certified</Text>
+            <Text style={styles.valueText}>IGI & GIA certified diamonds</Text>
+          </View>
+          <View style={styles.valueCard}>
+            <View style={styles.valueIconContainer}>
+              <Heart color={Colors.light.primary} size={24} strokeWidth={2} />
+            </View>
+            <Text style={styles.valueTitle}>Ethical</Text>
+            <Text style={styles.valueText}>Conflict-free & eco-friendly</Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -126,46 +158,123 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   heroSection: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   heroGradient: {
     paddingHorizontal: 24,
-    paddingVertical: 48,
+    paddingVertical: 56,
+    paddingBottom: 40,
+  },
+  brandContainer: {
+    alignItems: 'center' as const,
+    marginBottom: 40,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(212, 175, 55, 0.15)',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+  },
+  brandName: {
+    fontSize: 42,
+    fontWeight: '300' as const,
+    color: Colors.light.white,
+    letterSpacing: 8,
+    marginBottom: 8,
+  },
+  tagline: {
+    fontSize: 13,
+    color: Colors.light.secondary,
+    letterSpacing: 2,
+    textTransform: 'uppercase' as const,
+    fontWeight: '500' as const,
   },
   heroContent: {
     alignItems: 'center' as const,
   },
-  heroIconContainer: {
-    marginBottom: 16,
-  },
   heroTitle: {
-    fontSize: 36,
-    fontWeight: '700' as const,
+    fontSize: 32,
+    fontWeight: '600' as const,
     color: Colors.light.white,
     textAlign: 'center' as const,
-    marginBottom: 12,
+    marginBottom: 16,
     letterSpacing: -0.5,
   },
   heroSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.light.white,
     textAlign: 'center' as const,
     marginBottom: 32,
-    opacity: 0.9,
+    opacity: 0.85,
+    lineHeight: 22,
+    paddingHorizontal: 20,
   },
   heroButton: {
-    backgroundColor: Colors.light.white,
-    paddingHorizontal: 32,
+    backgroundColor: Colors.light.secondary,
+    paddingHorizontal: 36,
     paddingVertical: 16,
-    borderRadius: 30,
+    borderRadius: 8,
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: 8,
+    shadowColor: Colors.light.secondary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   heroButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600' as const,
     color: Colors.light.primary,
+    letterSpacing: 0.5,
+  },
+  valuesSection: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: 20,
+    marginBottom: 32,
+    gap: 12,
+  },
+  valueCard: {
+    flex: 1,
+    backgroundColor: Colors.light.white,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    shadowColor: Colors.light.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  valueIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(10, 31, 68, 0.08)',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginBottom: 12,
+  },
+  valueTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.light.text,
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  valueText: {
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+    textAlign: 'center' as const,
+    lineHeight: 16,
   },
   section: {
     marginBottom: 32,

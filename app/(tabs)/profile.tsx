@@ -17,7 +17,9 @@ import {
   HelpCircle,
   Shield,
   ChevronRight,
+  Lock,
 } from "lucide-react-native";
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
@@ -30,6 +32,7 @@ interface MenuItem {
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const menuSections: { title: string; items: MenuItem[] }[] = [
     {
@@ -84,6 +87,16 @@ export default function ProfileScreen() {
           icon: <Shield color={Colors.light.primary} size={20} />,
           label: "Privacy & Security",
           onPress: () => console.log("Privacy"),
+        },
+      ],
+    },
+    {
+      title: "Admin",
+      items: [
+        {
+          icon: <Lock color={Colors.light.primary} size={20} />,
+          label: "Admin Portal",
+          onPress: () => router.push('/admin/login' as any),
         },
       ],
     },

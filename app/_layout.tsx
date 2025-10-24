@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { WishlistProvider } from "@/contexts/WishlistContext";
+import { AdminProvider } from "@/contexts/AdminContext";
 import { trpc, trpcClient } from "@/lib/trpc";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -17,6 +18,8 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="product/[id]" options={{ title: "Product Details" }} />
+      <Stack.Screen name="admin/login" options={{ title: "Admin Login" }} />
+      <Stack.Screen name="admin/dashboard" options={{ title: "Admin Dashboard" }} />
     </Stack>
   );
 }
@@ -29,11 +32,13 @@ export default function RootLayout() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <WishlistProvider>
-          <GestureHandlerRootView>
-            <RootLayoutNav />
-          </GestureHandlerRootView>
-        </WishlistProvider>
+        <AdminProvider>
+          <WishlistProvider>
+            <GestureHandlerRootView>
+              <RootLayoutNav />
+            </GestureHandlerRootView>
+          </WishlistProvider>
+        </AdminProvider>
       </QueryClientProvider>
     </trpc.Provider>
   );

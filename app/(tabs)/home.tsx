@@ -83,6 +83,7 @@ export default function HomeScreen() {
                   source={{ uri: 'https://r2-pub.rork.com/generated-images/fa2e1967-a878-4c6f-a5b9-1cc78449eead.png' }}
                   style={styles.logoImage}
                   resizeMode="contain"
+                  tintColor={Colors.light.secondary}
                 />
               </View>
               <Text style={styles.brandName}>CELARA</Text>
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    marginBottom: 20,
+    marginBottom: 24,
     width: 80,
     height: 80,
   },
@@ -187,17 +188,17 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 40,
     fontWeight: '200' as const,
-    color: Colors.light.white,
+    color: Colors.light.secondary,
     letterSpacing: 12,
-    marginBottom: 12,
+    marginBottom: 24,
   },
   tagline: {
     fontSize: 11,
-    color: Colors.light.secondary,
+    color: Colors.light.white,
     letterSpacing: 3,
     textTransform: 'uppercase' as const,
     fontWeight: '400' as const,
-    opacity: 0.9,
+    opacity: 0.7,
   },
   heroContent: {
     alignItems: 'center' as const,

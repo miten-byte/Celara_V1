@@ -109,9 +109,15 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
     }));
   };
 
-  const handleItemPress = (item: string) => {
-    console.log("Navigate to:", item);
-    router.push("/(tabs)/shop");
+  const handleItemPress = (item: string, section: string) => {
+    console.log("Navigate to:", item, "in", section);
+    
+    if (section === "DIAMONDS") {
+      router.push("/diamonds/dashboard");
+    } else {
+      router.push("/(tabs)/shop");
+    }
+    
     onClose();
   };
 
@@ -176,7 +182,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                         <TouchableOpacity
                           key={item}
                           style={styles.menuItem}
-                          onPress={() => handleItemPress(item)}
+                          onPress={() => handleItemPress(item, section.title)}
                         >
                           <Text style={styles.menuItemText}>{item}</Text>
                           <ChevronRight

@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { protectedProcedure } from "../../../create-context";
-import { getDb } from "../../../../lib/mongodb";
-import { AIKnowledge } from "../../../../models/ai-knowledge.model";
-import { ObjectId } from "mongodb";
+import { protectedProcedure } from "../../../../create-context";
+import { connectToDatabase, ObjectId } from "../../../../../lib/mongodb";
+import { AIKnowledge } from "../../../../../models/ai-knowledge.model";
 
 export const updateKnowledgeProcedure = protectedProcedure
   .input(
@@ -15,11 +14,11 @@ export const updateKnowledgeProcedure = protectedProcedure
       isActive: z.boolean().optional(),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input }: { input: { id: string; title?: string; content?: string; keywords?: string[]; priority?: number; isActive?: boolean } }) => {
     console.log("[AI Knowledge Update] Updating knowledge:", input.id);
 
     try {
-      const db = await getDb();
+      const { db } = await connectToDatabase();
       const collection = db.collection<AIKnowledge>("aiknowledges");
 
       const updateData: any = {
@@ -28,7 +27,7 @@ export const updateKnowledgeProcedure = protectedProcedure
 
       if (input.title) updateData.title = input.title;
       if (input.content) updateData.content = input.content;
-      if (input.keywords) updateData.keywords = input.keywords.map(k => k.toLowerCase());
+      if (input.keywords) updateData.keywords = input.keywords.map((k: string) => k.toLowerCase());
       if (input.priority !== undefined) updateData.priority = input.priority;
       if (input.isActive !== undefined) updateData.isActive = input.isActive;
 

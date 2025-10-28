@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { protectedProcedure } from "../../../create-context";
-import { getDb } from "../../../../lib/mongodb";
-import { AIKnowledge } from "../../../../models/ai-knowledge.model";
+import { protectedProcedure } from "../../../../create-context";
+import { connectToDatabase } from "../../../../../lib/mongodb";
+import { AIKnowledge } from "../../../../../models/ai-knowledge.model";
 
 export const listKnowledgeProcedure = protectedProcedure
   .input(
@@ -12,11 +12,11 @@ export const listKnowledgeProcedure = protectedProcedure
       skip: z.number().default(0),
     })
   )
-  .query(async ({ input }) => {
+  .query(async ({ input }: { input: { category?: string; isActive?: boolean; limit: number; skip: number } }) => {
     console.log("[AI Knowledge List] Fetching knowledge");
 
     try {
-      const db = await getDb();
+      const { db } = await connectToDatabase();
       const collection = db.collection<AIKnowledge>("aiknowledges");
 
       const filter: any = {};

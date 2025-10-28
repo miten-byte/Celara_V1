@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { publicProcedure } from "../../../create-context";
-import { getDb } from "../../../../lib/mongodb";
-import { AIKnowledge } from "../../../../models/ai-knowledge.model";
+import { publicProcedure } from "../../../../create-context";
+import { connectToDatabase } from "../../../../../lib/mongodb";
+import { AIKnowledge } from "../../../../../models/ai-knowledge.model";
 
 export const searchKnowledgeProcedure = publicProcedure
   .input(
@@ -11,11 +11,11 @@ export const searchKnowledgeProcedure = publicProcedure
       limit: z.number().default(5),
     })
   )
-  .query(async ({ input }) => {
+  .query(async ({ input }: { input: { query: string; category?: string; limit: number } }) => {
     console.log("[AI Knowledge Search] Input:", input);
 
     try {
-      const db = await getDb();
+      const { db } = await connectToDatabase();
       const collection = db.collection<AIKnowledge>("aiknowledges");
 
       const searchQuery: any = {

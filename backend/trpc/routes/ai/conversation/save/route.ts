@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { publicProcedure } from "../../../create-context";
-import { getDb } from "../../../../lib/mongodb";
-import { Conversation, ConversationMessage } from "../../../../models/conversation.model";
+import { publicProcedure } from "../../../../create-context";
+import { connectToDatabase } from "../../../../../lib/mongodb";
+import { Conversation, ConversationMessage } from "../../../../../models/conversation.model";
 
 export const saveConversationProcedure = publicProcedure
   .input(
@@ -23,11 +23,11 @@ export const saveConversationProcedure = publicProcedure
       }).optional(),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input }: { input: { sessionId: string; message: { role: 'user' | 'assistant'; content: string; toolsUsed?: string[] }; context?: any } }) => {
     console.log("[Conversation Save] Saving message for session:", input.sessionId);
 
     try {
-      const db = await getDb();
+      const { db } = await connectToDatabase();
       const collection = db.collection<Conversation>("conversations");
 
       const newMessage: ConversationMessage = {

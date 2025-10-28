@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { protectedProcedure } from "../../../create-context";
-import { getDb } from "../../../../lib/mongodb";
-import { AIKnowledge, KnowledgeCategory, KnowledgeSource } from "../../../../models/ai-knowledge.model";
+import { protectedProcedure } from "../../../../create-context";
+import { connectToDatabase } from "../../../../../lib/mongodb";
+import { AIKnowledge, KnowledgeCategory, KnowledgeSource } from "../../../../../models/ai-knowledge.model";
 
 export const addKnowledgeProcedure = protectedProcedure
   .input(
@@ -32,18 +32,18 @@ export const addKnowledgeProcedure = protectedProcedure
       source: z.enum(["manual", "feedback", "admin"]).default("admin"),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input }: { input: { category: string; title: string; content: string; keywords: string[]; priority: number; source: string } }) => {
     console.log("[AI Knowledge Add] Adding knowledge:", input.title);
 
     try {
-      const db = await getDb();
+      const { db } = await connectToDatabase();
       const collection = db.collection<AIKnowledge>("aiknowledges");
 
       const newKnowledge: Omit<AIKnowledge, "_id"> = {
         category: input.category as KnowledgeCategory,
         title: input.title,
         content: input.content,
-        keywords: input.keywords.map(k => k.toLowerCase()),
+        keywords: input.keywords.map((k: string) => k.toLowerCase()),
         priority: input.priority,
         usageCount: 0,
         successRate: 0,

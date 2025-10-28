@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { publicProcedure } from "../../../create-context";
-import { getDb } from "../../../../lib/mongodb";
-import { Conversation, ConversationFeedback } from "../../../../models/conversation.model";
+import { publicProcedure } from "../../../../create-context";
+import { connectToDatabase } from "../../../../../lib/mongodb";
+import { Conversation, ConversationFeedback } from "../../../../../models/conversation.model";
 
 export const addFeedbackProcedure = publicProcedure
   .input(
@@ -12,11 +12,11 @@ export const addFeedbackProcedure = publicProcedure
       comment: z.string().optional(),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input }: { input: { sessionId: string; messageIndex: number; rating: 'helpful' | 'not-helpful'; comment?: string } }) => {
     console.log("[Conversation Feedback] Adding feedback for session:", input.sessionId);
 
     try {
-      const db = await getDb();
+      const { db } = await connectToDatabase();
       const collection = db.collection<Conversation>("conversations");
 
       const newFeedback: ConversationFeedback = {

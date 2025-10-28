@@ -78,14 +78,6 @@ export default function HomeScreen() {
             style={styles.heroGradient}
           >
             <View style={styles.brandContainer}>
-              <View style={styles.logoContainer}>
-                <Image 
-                  source={{ uri: 'https://r2-pub.rork.com/generated-images/fa2e1967-a878-4c6f-a5b9-1cc78449eead.png' }}
-                  style={styles.logoImage}
-                  resizeMode="contain"
-                  tintColor={Colors.light.secondary}
-                />
-              </View>
               <Text style={styles.brandName}>CELARA</Text>
               <Text style={styles.tagline}>Crafted by Science. Worn with Soul.</Text>
             </View>
@@ -172,33 +164,23 @@ const styles = StyleSheet.create({
   },
   brandContainer: {
     alignItems: 'center' as const,
-    marginBottom: 40,
-  },
-  logoContainer: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginBottom: 24,
-    width: 80,
-    height: 80,
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
+    marginBottom: 48,
   },
   brandName: {
-    fontSize: 40,
-    fontWeight: '200' as const,
+    fontSize: 56,
+    fontWeight: '300' as const,
     color: Colors.light.secondary,
-    letterSpacing: 12,
-    marginBottom: 24,
+    letterSpacing: 8,
+    marginBottom: 16,
+    fontFamily: 'serif',
   },
   tagline: {
-    fontSize: 11,
+    fontSize: 13,
     color: Colors.light.white,
-    letterSpacing: 3,
-    textTransform: 'uppercase' as const,
-    fontWeight: '400' as const,
-    opacity: 0.7,
+    letterSpacing: 2.5,
+    fontWeight: '300' as const,
+    opacity: 0.85,
+    fontFamily: 'serif',
   },
   heroContent: {
     alignItems: 'center' as const,

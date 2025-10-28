@@ -9,9 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Send, Sparkles } from "lucide-react-native";
+import { Send, Sparkles, Wand2 } from "lucide-react-native";
+import { Image } from "expo-image";
 import { createRorkTool, useRorkAgent } from "@rork/toolkit-sdk";
 import { z } from "zod";
 import { useRouter } from "expo-router";
@@ -28,6 +30,8 @@ export default function ChatScreen() {
   const { toggleWishlist, isInWishlist } = useWishlist();
   
   const productsQuery = trpc.products.list.useQuery();
+
+  const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
 
   const { messages, error, sendMessage } = useRorkAgent({
     tools: {
@@ -123,6 +127,44 @@ export default function ChatScreen() {
           return params.topic ? info[params.topic] : JSON.stringify(info, null, 2);
         },
       }),
+      generateDesign: createRorkTool({
+        description: "Generate a custom jewelry design based on user description. Use this when user wants to create, design, or visualize a custom piece of jewelry.",
+        zodSchema: z.object({
+          description: z.string().describe("Detailed description of the jewelry design including type (ring, necklace, earring, etc.), style, materials, gemstones, and any specific features"),
+        }),
+        async execute(params) {
+          try {
+            setIsGeneratingDesign(true);
+            const response = await fetch("https://toolkit.rork.com/images/generate/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                prompt: `High-quality professional product photography of ${params.description}. Studio lighting, white background, jewelry photography, ultra detailed, 8K resolution, luxury jewelry aesthetic.`,
+                size: "1024x1024",
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to generate design");
+            }
+
+            const data = await response.json();
+            setIsGeneratingDesign(false);
+            
+            return JSON.stringify({
+              success: true,
+              image: `data:${data.image.mimeType};base64,${data.image.base64Data}`,
+              description: params.description,
+            });
+          } catch (error) {
+            setIsGeneratingDesign(false);
+            console.error("Design generation error:", error);
+            return JSON.stringify({ success: false, error: "Failed to generate design" });
+          }
+        },
+      }),
     },
   });
 
@@ -167,7 +209,7 @@ export default function ChatScreen() {
               <Sparkles color={Colors.light.primary} size={48} />
               <Text style={styles.emptyTitle}>Welcome to Celara AI</Text>
               <Text style={styles.emptySubtitle}>
-                I&apos;m here to help you find the perfect lab-grown jewelry. Ask me about products, prices, or our craftsmanship!
+                I&apos;m here to help you find the perfect lab-grown jewelry. Ask me about products, prices, or design your dream piece!
               </Text>
               <View style={styles.suggestionsContainer}>
                 <TouchableOpacity
@@ -178,15 +220,15 @@ export default function ChatScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.suggestionChip}
-                  onPress={() => sendMessage("Tell me about lab-grown diamonds")}
+                  onPress={() => sendMessage("Design a custom rose gold engagement ring")}
                 >
-                  <Text style={styles.suggestionText}>About lab-grown diamonds</Text>
+                  <Text style={styles.suggestionText}>Design custom jewelry</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.suggestionChip}
-                  onPress={() => sendMessage("What are your bestsellers?")}
+                  onPress={() => sendMessage("Tell me about lab-grown diamonds")}
                 >
-                  <Text style={styles.suggestionText}>Show bestsellers</Text>
+                  <Text style={styles.suggestionText}>About lab-grown diamonds</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -229,11 +271,52 @@ export default function ChatScreen() {
                               {toolName === "viewProduct" && "Opening product..."}
                               {toolName === "addToWishlist" && "Adding to wishlist..."}
                               {toolName === "getLabGrownInfo" && "Getting information..."}
+                              {toolName === "generateDesign" && "Generating your custom design..."}
                             </Text>
                           </View>
                         );
 
                       case "output-available":
+                        if (toolName === "generateDesign") {
+                          try {
+                            const output = typeof part.output === "string" ? JSON.parse(part.output) : part.output;
+                            if (output.success && output.image) {
+                              return (
+                                <View key={`${message.id}-${index}`} style={styles.designResult}>
+                                  <Image
+                                    source={{ uri: output.image }}
+                                    style={styles.designImage}
+                                    contentFit="cover"
+                                  />
+                                  <Text style={styles.designDescription}>{output.description}</Text>
+                                  <TouchableOpacity
+                                    style={styles.getQuoteButton}
+                                    onPress={() => {
+                                      Alert.alert(
+                                        "Request a Quote",
+                                        "Our jewelry consultants will contact you within 24 hours with a detailed quote for your custom design.",
+                                        [
+                                          { text: "Cancel", style: "cancel" },
+                                          {
+                                            text: "Continue",
+                                            onPress: () => {
+                                              Alert.alert("Quote Requested", "We'll be in touch soon!");
+                                            },
+                                          },
+                                        ]
+                                      );
+                                    }}
+                                  >
+                                    <Wand2 color={Colors.light.white} size={18} />
+                                    <Text style={styles.getQuoteText}>Get Quote</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              );
+                            }
+                          } catch (e) {
+                            console.error("Error parsing design output:", e);
+                          }
+                        }
                         return (
                           <View key={`${message.id}-${index}`} style={styles.toolResult}>
                             <Text style={styles.toolResultText}>
@@ -483,5 +566,38 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: Colors.light.border,
+  },
+  designResult: {
+    marginTop: 12,
+    width: "100%",
+  },
+  designImage: {
+    width: "100%",
+    height: 280,
+    borderRadius: 12,
+    backgroundColor: Colors.light.background,
+  },
+  designDescription: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  getQuoteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.light.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 12,
+    gap: 8,
+  },
+  getQuoteText: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+    letterSpacing: 0.5,
   },
 });

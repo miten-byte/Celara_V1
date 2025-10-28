@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, ShoppingBag, Heart, User } from "lucide-react-native";
+import { Home, ShoppingBag, Heart, User, MessageCircle } from "lucide-react-native";
 import React from "react";
 
 import Colors from "@/constants/colors";
@@ -41,6 +41,13 @@ export default function TabLayout() {
         options={{
           title: "Wishlist",
           tabBarIcon: ({ color, size }) => <Heart color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: "AI Chat",
+          tabBarIcon: ({ color, size }) => <MessageCircle color={color} size={size} />,
         }}
       />
       <Tabs.Screen

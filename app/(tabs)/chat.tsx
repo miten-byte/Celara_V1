@@ -395,9 +395,8 @@ export default function ChatScreen() {
                                     onLoad={() => console.log("[Chat] Image loaded successfully")}
                                     onError={(error) => {
                                       console.error("[Chat] Image load error:", {
-                                        error: JSON.stringify(error, null, 2),
-                                        errorKeys: Object.keys(error),
-                                        errorType: typeof error,
+                                        error: error?.error || 'Unknown error',
+                                        source: error?.source,
                                         uri: output.image?.substring(0, 100),
                                       });
                                     }}

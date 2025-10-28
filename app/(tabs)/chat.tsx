@@ -393,7 +393,12 @@ export default function ChatScreen() {
                                     style={styles.designImage}
                                     contentFit="cover"
                                     onLoad={() => console.log("[Chat] Image loaded successfully")}
-                                    onError={(error) => console.error("[Chat] Image load error:", error)}
+                                    onError={(error) => {
+                                      console.error("[Chat] Image load error:", {
+                                        message: error.error,
+                                        uri: output.image?.substring(0, 50),
+                                      });
+                                    }}
                                   />
                                   <Text style={styles.designDescription}>{output.description}</Text>
                                   <TouchableOpacity

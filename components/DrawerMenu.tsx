@@ -67,7 +67,7 @@ const MENU_DATA: MenuItem[] = [
   },
   {
     title: "Diamonds",
-    route: "/diamonds/dashboard",
+    route: "/diamonds/stock-search",
     items: [],
   },
 ];

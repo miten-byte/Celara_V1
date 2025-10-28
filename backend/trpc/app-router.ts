@@ -9,6 +9,9 @@ import { getProductProcedure } from "./routes/products/get/route";
 import { createProductProcedure } from "./routes/products/create/route";
 import { updateProductProcedure } from "./routes/products/update/route";
 import { deleteProductProcedure } from "./routes/products/delete/route";
+import { bulkUploadDiamondsProcedure } from "./routes/diamonds/bulk-upload/route";
+import { listDiamondsProcedure } from "./routes/diamonds/list/route";
+import { getDiamondProcedure } from "./routes/diamonds/get/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -28,6 +31,11 @@ export const appRouter = createTRPCRouter({
     create: createProductProcedure,
     update: updateProductProcedure,
     delete: deleteProductProcedure,
+  }),
+  diamonds: createTRPCRouter({
+    list: listDiamondsProcedure,
+    get: getDiamondProcedure,
+    bulkUpload: bulkUploadDiamondsProcedure,
   }),
 });
 

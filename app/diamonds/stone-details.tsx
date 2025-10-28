@@ -171,7 +171,7 @@ export default function StoneDetailsScreen() {
           <Heart color={Colors.light.white} size={24} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.buyNowButton}>
-          <Text style={styles.buyNowText}>Buy Now</Text>
+          <Text style={styles.buyNowText}>Customize</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.addToCartButton}>
           <ShoppingCart color={Colors.light.white} size={24} />

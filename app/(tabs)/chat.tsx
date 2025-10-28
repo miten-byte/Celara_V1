@@ -198,6 +198,11 @@ export default function ChatScreen() {
             
             setIsGeneratingDesign(false);
             
+            if (!data.image?.base64Data || !data.image?.mimeType) {
+              console.error("[Chat] Invalid image data:", data);
+              throw new Error("Invalid image data received from API");
+            }
+            
             const imageUri = `data:${data.image.mimeType};base64,${data.image.base64Data}`;
             console.log("[Chat] Generated image URI prefix:", imageUri.substring(0, 50));
             

@@ -14,6 +14,7 @@ import { Heart, ShoppingCart, Info, Award, Shield } from "lucide-react-native";
 import Colors from "@/constants/colors";
 import { products, metals, MetalType } from "@/mocks/jewelry";
 import { useWishlist } from "@/contexts/WishlistContext";
+import { useCart } from "@/contexts/CartContext";
 
 const { width } = Dimensions.get("window");
 
@@ -21,6 +22,7 @@ export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
 
   const product = products.find((p) => p.id === id);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -238,7 +240,17 @@ export default function ProductDetailScreen() {
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.addToCartButton}
-          onPress={() => console.log("Add to cart")}
+          onPress={() => {
+            addToCart({
+              productId: product.id,
+              name: product.name,
+              price: product.price,
+              image: product.image,
+              metal: selectedMetal,
+              size: product.category === "Engagement Rings" ? ringSize : undefined,
+            });
+            router.push("/(tabs)/cart");
+          }}
         >
           <ShoppingCart color={Colors.light.white} size={20} />
           <Text style={styles.addToCartText}>Add to Cart</Text>

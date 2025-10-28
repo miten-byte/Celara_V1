@@ -49,6 +49,28 @@ const MENU_DATA: MenuItem[] = [
       "Wristwear",
     ],
   },
+  {
+    title: "CREATE YOUR OWN",
+    items: [
+      "Custom Rings",
+      "Custom Earrings",
+      "Custom Necklaces",
+      "Custom Bracelets",
+    ],
+  },
+  {
+    title: "DIAMONDS",
+    items: [
+      "Round Cut",
+      "Princess Cut",
+      "Oval Cut",
+      "Emerald Cut",
+      "Cushion Cut",
+      "Pear Cut",
+      "Marquise Cut",
+      "Radiant Cut",
+    ],
+  },
 ];
 
 export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
@@ -58,6 +80,8 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     JEWELLERY: true,
     COLLECTIONS: true,
+    "CREATE YOUR OWN": true,
+    DIAMONDS: true,
   });
   const [slideAnim] = useState(new Animated.Value(-DRAWER_WIDTH));
 

@@ -17,7 +17,6 @@ import {
   HelpCircle,
   Shield,
   ChevronRight,
-  Lock,
   LogOut,
 } from "lucide-react-native";
 import { useRouter } from 'expo-router';
@@ -99,16 +98,6 @@ export default function ProfileScreen() {
           icon: <Shield color={Colors.light.primary} size={20} />,
           label: "Privacy & Security",
           onPress: () => console.log("Privacy"),
-        },
-      ],
-    },
-    {
-      title: "Admin",
-      items: [
-        {
-          icon: <Lock color={Colors.light.primary} size={20} />,
-          label: "Admin Portal",
-          onPress: () => router.push('/admin/login' as any),
         },
       ],
     },

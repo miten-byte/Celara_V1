@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Sparkles, Heart, Shield, Gem } from "lucide-react-native";
+import { ChevronRight, Sparkles, Heart, Shield, Gem, Menu } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import DrawerMenu from "@/components/DrawerMenu";
 
 import Colors from "@/constants/colors";
 import { products, categories, Product } from "@/mocks/jewelry";
@@ -22,6 +23,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 6);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const renderCategoryCard = (category: string, index: number) => {
     const categoryImage = products.find((p) => p.category === category)?.image;
@@ -66,6 +68,13 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        style={[styles.menuButton, { top: insets.top + 16 }]}
+        onPress={() => setDrawerVisible(true)}
+      >
+        <Menu color={Colors.light.white} size={24} />
+      </TouchableOpacity>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
@@ -142,6 +151,11 @@ export default function HomeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <DrawerMenu
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+      />
     </View>
   );
 }
@@ -150,6 +164,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  menuButton: {
+    position: 'absolute' as const,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 8,
+    padding: 8,
+    shadowColor: Colors.light.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   scrollContent: {
     paddingBottom: 24,

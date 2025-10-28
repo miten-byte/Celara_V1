@@ -114,9 +114,9 @@ export default function ChatScreen() {
         execute(params) {
           const info = {
             benefits: "Lab-grown diamonds are chemically, physically, and optically identical to mined diamonds. They offer exceptional value, ethical sourcing, and environmental responsibility.",
-            quality: "All Celara lab-grown diamonds meet the same strict grading standards as mined diamonds, certified by GIA, IGI, or other recognized gemological institutes.",
+            quality: "All Celara lab-grown diamonds meet the same strict grading standards as mined diamonds, certified by IGI or other recognized gemological institutes.",
             sustainability: "Lab-grown diamonds use significantly less water, generate less waste, and have a smaller carbon footprint compared to traditional mining.",
-            certification: "Each diamond comes with certification from recognized institutions like GIA or IGI, ensuring authenticity and quality.",
+            certification: "Each diamond comes with certification from recognized institutions like IGI, ensuring authenticity and quality.",
             pricing: "Lab-grown diamonds typically cost 30-40% less than mined diamonds of comparable quality, allowing you to get a larger or higher-quality stone for your budget.",
           };
           

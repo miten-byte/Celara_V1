@@ -112,7 +112,7 @@ export default function HomeScreen() {
               <Shield color={Colors.light.primary} size={24} strokeWidth={1.5} />
             </View>
             <Text style={styles.valueTitle}>Certified</Text>
-            <Text style={styles.valueText}>IGI & GIA certified diamonds</Text>
+            <Text style={styles.valueText}>IGI certified diamonds</Text>
           </View>
           <View style={styles.valueCard}>
             <View style={styles.valueIconContainer}>

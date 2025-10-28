@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 
 export type DiamondShape = 'Round' | 'Princess' | 'Cushion' | 'Oval' | 'Emerald' | 'Pear' | 'Marquise' | 'Asscher';
-export type MetalType = 'Platinum' | '18K White Gold' | '18K Yellow Gold' | '18K Rose Gold' | '14K White Gold' | '14K Yellow Gold';
+export type MetalType = '18K White Gold' | '18K Yellow Gold' | '18K Rose Gold' | '14K White Gold' | '14K Yellow Gold';
 export type Category = 'Engagement Rings' | 'Wedding Bands' | 'Earrings' | 'Necklaces' | 'Bracelets' | 'Loose Diamonds';
 export type Cut = 'Ideal' | 'Excellent' | 'Very Good' | 'Good';
 export type Color = 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J';

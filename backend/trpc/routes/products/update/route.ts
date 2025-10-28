@@ -13,7 +13,7 @@ const updateProductSchema = z.object({
   images: z.array(z.string().url()).optional(),
   description: z.string().optional(),
   shape: z.enum(['Round', 'Princess', 'Cushion', 'Oval', 'Emerald', 'Pear', 'Marquise', 'Asscher']).optional(),
-  metal: z.enum(['Platinum', '18K White Gold', '18K Yellow Gold', '18K Rose Gold', '14K White Gold', '14K Yellow Gold']).optional(),
+  metal: z.enum(['18K White Gold', '18K Yellow Gold', '18K Rose Gold', '14K White Gold', '14K Yellow Gold']).optional(),
   carat: z.number().positive().optional(),
   cut: z.enum(['Ideal', 'Excellent', 'Very Good', 'Good']).optional(),
   color: z.enum(['D', 'E', 'F', 'G', 'H', 'I', 'J']).optional(),

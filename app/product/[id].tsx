@@ -24,8 +24,9 @@ export default function ProductDetailScreen() {
 
   const product = products.find((p) => p.id === id);
   const [selectedImage, setSelectedImage] = useState(0);
+  const defaultMetal: MetalType = "18K White Gold";
   const [selectedMetal, setSelectedMetal] = useState<MetalType>(
-    product?.metal || "Platinum"
+    (product?.metal as MetalType) || defaultMetal
   );
   const [ringSize, setRingSize] = useState("6");
 

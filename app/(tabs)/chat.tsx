@@ -167,7 +167,9 @@ export default function ChatScreen() {
         }),
         async execute(params) {
           try {
+            console.log("[Chat] Starting design generation for:", params.description);
             setIsGeneratingDesign(true);
+            
             const response = await fetch("https://toolkit.rork.com/images/generate/", {
               method: "POST",
               headers: {
@@ -179,22 +181,38 @@ export default function ChatScreen() {
               }),
             });
 
+            console.log("[Chat] Image generation response status:", response.status);
+            
             if (!response.ok) {
-              throw new Error("Failed to generate design");
+              const errorText = await response.text();
+              console.error("[Chat] Image generation failed:", response.status, errorText);
+              throw new Error(`Failed to generate design: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log("[Chat] Image generation successful, data received:", {
+              hasMimeType: !!data.image?.mimeType,
+              hasBase64: !!data.image?.base64Data,
+              base64Length: data.image?.base64Data?.length,
+            });
+            
             setIsGeneratingDesign(false);
+            
+            const imageUri = `data:${data.image.mimeType};base64,${data.image.base64Data}`;
+            console.log("[Chat] Generated image URI prefix:", imageUri.substring(0, 50));
             
             return JSON.stringify({
               success: true,
-              image: `data:${data.image.mimeType};base64,${data.image.base64Data}`,
+              image: imageUri,
               description: params.description,
             });
           } catch (error) {
             setIsGeneratingDesign(false);
-            console.error("Design generation error:", error);
-            return JSON.stringify({ success: false, error: "Failed to generate design" });
+            console.error("[Chat] Design generation error:", error);
+            return JSON.stringify({ 
+              success: false, 
+              error: error instanceof Error ? error.message : "Failed to generate design" 
+            });
           }
         },
       }),
@@ -365,6 +383,8 @@ export default function ChatScreen() {
                         if (toolName === "generateDesign") {
                           try {
                             const output = typeof part.output === "string" ? JSON.parse(part.output) : part.output;
+                            console.log("[Chat] Design output received:", { hasSuccess: !!output.success, hasImage: !!output.image, imagePrefix: output.image?.substring(0, 30) });
+                            
                             if (output.success && output.image) {
                               return (
                                 <View key={`${message.id}-${index}`} style={styles.designResult}>
@@ -372,6 +392,8 @@ export default function ChatScreen() {
                                     source={{ uri: output.image }}
                                     style={styles.designImage}
                                     contentFit="cover"
+                                    onLoad={() => console.log("[Chat] Image loaded successfully")}
+                                    onError={(error) => console.error("[Chat] Image load error:", error)}
                                   />
                                   <Text style={styles.designDescription}>{output.description}</Text>
                                   <TouchableOpacity
@@ -397,9 +419,21 @@ export default function ChatScreen() {
                                   </TouchableOpacity>
                                 </View>
                               );
+                            } else {
+                              console.error("[Chat] Invalid design output:", output);
+                              return (
+                                <View key={`${message.id}-${index}`} style={styles.toolError}>
+                                  <Text style={styles.toolErrorText}>Failed to generate design. Please try again.</Text>
+                                </View>
+                              );
                             }
                           } catch (e) {
-                            console.error("Error parsing design output:", e);
+                            console.error("[Chat] Error parsing design output:", e, part.output);
+                            return (
+                              <View key={`${message.id}-${index}`} style={styles.toolError}>
+                                <Text style={styles.toolErrorText}>Error displaying design. Please try again.</Text>
+                              </View>
+                            );
                           }
                         }
                         return (

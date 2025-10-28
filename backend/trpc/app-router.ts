@@ -12,6 +12,12 @@ import { deleteProductProcedure } from "./routes/products/delete/route";
 import { bulkUploadDiamondsProcedure } from "./routes/diamonds/bulk-upload/route";
 import { listDiamondsProcedure } from "./routes/diamonds/list/route";
 import { getDiamondProcedure } from "./routes/diamonds/get/route";
+import { searchKnowledgeProcedure } from "./routes/ai/knowledge/search/route";
+import { addKnowledgeProcedure } from "./routes/ai/knowledge/add/route";
+import { listKnowledgeProcedure } from "./routes/ai/knowledge/list/route";
+import { updateKnowledgeProcedure } from "./routes/ai/knowledge/update/route";
+import { saveConversationProcedure } from "./routes/ai/conversation/save/route";
+import { addFeedbackProcedure } from "./routes/ai/conversation/feedback/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -36,6 +42,18 @@ export const appRouter = createTRPCRouter({
     list: listDiamondsProcedure,
     get: getDiamondProcedure,
     bulkUpload: bulkUploadDiamondsProcedure,
+  }),
+  ai: createTRPCRouter({
+    knowledge: createTRPCRouter({
+      search: searchKnowledgeProcedure,
+      add: addKnowledgeProcedure,
+      list: listKnowledgeProcedure,
+      update: updateKnowledgeProcedure,
+    }),
+    conversation: createTRPCRouter({
+      save: saveConversationProcedure,
+      feedback: addFeedbackProcedure,
+    }),
   }),
 });
 

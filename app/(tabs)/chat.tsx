@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Send, Sparkles, Wand2 } from "lucide-react-native";
+import { Send, Sparkles, Wand2, ThumbsUp, ThumbsDown } from "lucide-react-native";
 import { Image } from "expo-image";
 import { createRorkTool, useRorkAgent } from "@rork/toolkit-sdk";
 import { z } from "zod";
@@ -32,6 +32,12 @@ export default function ChatScreen() {
   const productsQuery = trpc.products.list.useQuery();
 
   const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState<{ [key: string]: boolean }>({});
+  
+  const sessionId = useMemo(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
+  
+  const saveConversationMutation = trpc.ai.conversation.save.useMutation();
+  const feedbackMutation = trpc.ai.conversation.feedback.useMutation();
 
   const { messages, error, sendMessage } = useRorkAgent({
     tools: {
@@ -110,8 +116,35 @@ export default function ChatScreen() {
           return "Product is already in your wishlist";
         },
       }),
+      searchKnowledge: createRorkTool({
+        description: "Search the jewelry knowledge base for specific information about diamonds, jewelry care, styles, metals, certifications, and more. Use this for detailed expert knowledge.",
+        zodSchema: z.object({
+          query: z.string().describe("Search query for the knowledge base"),
+          category: z.string().optional().describe("Category to filter by: diamond-education, metal-types, jewelry-care, sizing-guide, certification, customization, pricing, lab-grown-vs-mined, ring-styles, earring-styles, necklace-styles, bracelet-styles, pendant-styles, gemstone-properties, design-trends, maintenance, general"),
+        }),
+        async execute(params) {
+          try {
+            const result = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/trpc/ai.knowledge.search?input=${encodeURIComponent(JSON.stringify(params))}`).then(r => r.json());
+            
+            if (result.result?.data?.results && result.result.data.results.length > 0) {
+              const knowledge = result.result.data.results.map((k: any) => ({
+                title: k.title,
+                content: k.content,
+                category: k.category,
+              }));
+              
+              return JSON.stringify(knowledge, null, 2);
+            }
+            
+            return JSON.stringify({ message: "No specific knowledge found. Please provide general guidance based on common jewelry expertise." });
+          } catch (error) {
+            console.error("Knowledge search error:", error);
+            return JSON.stringify({ error: "Failed to search knowledge base" });
+          }
+        },
+      }),
       getLabGrownInfo: createRorkTool({
-        description: "Get information about lab-grown diamonds and Celara philosophy",
+        description: "Get quick information about lab-grown diamonds and Celara philosophy",
         zodSchema: z.object({
           topic: z.enum(["benefits", "quality", "sustainability", "certification", "pricing"]).optional(),
         }),
@@ -174,10 +207,61 @@ export default function ChatScreen() {
 
   const handleSend = () => {
     if (input.trim()) {
-      sendMessage(input.trim());
+      const message = input.trim();
+      sendMessage(message);
       setInput("");
+      
+      saveConversationMutation.mutate({
+        sessionId,
+        message: {
+          role: "user",
+          content: message,
+        },
+      });
     }
   };
+  
+  const handleFeedback = (messageId: string, messageIndex: number, rating: "helpful" | "not-helpful", comment?: string) => {
+    if (feedbackGiven[messageId]) return;
+    
+    setFeedbackGiven(prev => ({ ...prev, [messageId]: true }));
+    
+    feedbackMutation.mutate({
+      sessionId,
+      messageIndex,
+      rating,
+      comment,
+    });
+    
+    console.log("[Chat] Feedback submitted:", { messageIndex, rating });
+  };
+  
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === "assistant") {
+        const textContent = lastMessage.parts
+          .filter(p => p.type === "text")
+          .map(p => (p as any).text)
+          .join(" ");
+        
+        const toolsUsed = lastMessage.parts
+          .filter(p => p.type === "tool")
+          .map(p => (p as any).toolName);
+        
+        if (textContent) {
+          saveConversationMutation.mutate({
+            sessionId,
+            message: {
+              role: "assistant",
+              content: textContent,
+              toolsUsed,
+            },
+          });
+        }
+      }
+    }
+  }, [messages]);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -234,7 +318,7 @@ export default function ChatScreen() {
             </View>
           )}
 
-          {messages.map((message) => (
+          {messages.map((message, messageIndex) => (
             <View key={message.id} style={styles.messageWrapper}>
               <View
                 style={[
@@ -270,6 +354,7 @@ export default function ChatScreen() {
                               {toolName === "searchProducts" && "Searching products..."}
                               {toolName === "viewProduct" && "Opening product..."}
                               {toolName === "addToWishlist" && "Adding to wishlist..."}
+                              {toolName === "searchKnowledge" && "Searching jewelry knowledge base..."}
                               {toolName === "getLabGrownInfo" && "Getting information..."}
                               {toolName === "generateDesign" && "Generating your custom design..."}
                             </Text>
@@ -337,6 +422,40 @@ export default function ChatScreen() {
                   return null;
                 })}
               </View>
+              
+              {message.role === "assistant" && (
+                <View style={styles.feedbackContainer}>
+                  <Text style={styles.feedbackLabel}>Was this helpful?</Text>
+                  <View style={styles.feedbackButtons}>
+                    <TouchableOpacity
+                      style={[
+                        styles.feedbackButton,
+                        feedbackGiven[message.id] && styles.feedbackButtonDisabled,
+                      ]}
+                      onPress={() => handleFeedback(message.id, messageIndex, "helpful")}
+                      disabled={feedbackGiven[message.id]}
+                    >
+                      <ThumbsUp
+                        color={feedbackGiven[message.id] ? Colors.light.textSecondary : Colors.light.primary}
+                        size={16}
+                      />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.feedbackButton,
+                        feedbackGiven[message.id] && styles.feedbackButtonDisabled,
+                      ]}
+                      onPress={() => handleFeedback(message.id, messageIndex, "not-helpful")}
+                      disabled={feedbackGiven[message.id]}
+                    >
+                      <ThumbsDown
+                        color={feedbackGiven[message.id] ? Colors.light.textSecondary : Colors.light.primary}
+                        size={16}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           ))}
 
@@ -599,5 +718,30 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
     color: Colors.light.white,
     letterSpacing: 0.5,
+  },
+  feedbackContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    gap: 12,
+  },
+  feedbackLabel: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+  },
+  feedbackButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  feedbackButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: `${Colors.light.primary}10`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  feedbackButtonDisabled: {
+    opacity: 0.5,
   },
 });

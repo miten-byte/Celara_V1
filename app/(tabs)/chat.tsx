@@ -396,7 +396,6 @@ export default function ChatScreen() {
                                     onError={(error) => {
                                       console.error("[Chat] Image load error:", {
                                         error: error?.error || 'Unknown error',
-                                        source: error?.source,
                                         uri: output.image?.substring(0, 100),
                                       });
                                     }}

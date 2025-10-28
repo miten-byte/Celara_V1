@@ -16,16 +16,32 @@ import { useRouter } from 'expo-router';
 import { trpc } from '@/lib/trpc';
 import { useUser } from '@/contexts/UserContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react-native';
+import { Mail, Lock, User as UserIcon, Eye, EyeOff, Phone, Globe } from 'lucide-react-native';
+
+const COUNTRY_CODES = [
+  { code: '+1', country: 'US/CA' },
+  { code: '+44', country: 'UK' },
+  { code: '+91', country: 'IN' },
+  { code: '+86', country: 'CN' },
+  { code: '+81', country: 'JP' },
+  { code: '+49', country: 'DE' },
+  { code: '+33', country: 'FR' },
+  { code: '+61', country: 'AU' },
+  { code: '+971', country: 'AE' },
+  { code: '+65', country: 'SG' },
+];
 
 export default function AuthScreen() {
   const [isSignup, setIsSignup] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [countryCode, setCountryCode] = useState('+1');
+  const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const router = useRouter();
-  const { login } = useUser();
+  const { login, loginAsGuest } = useUser();
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: async (data) => {
@@ -55,6 +71,7 @@ export default function AuthScreen() {
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
     const trimmedName = name.trim();
+    const trimmedPhone = phone.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
       Alert.alert('Error', 'Please enter email and password');
@@ -66,9 +83,29 @@ export default function AuthScreen() {
         Alert.alert('Error', 'Please enter your name');
         return;
       }
-      signupMutation.mutate({ email: trimmedEmail, password: trimmedPassword, name: trimmedName });
+      if (!trimmedPhone) {
+        Alert.alert('Error', 'Please enter your phone number');
+        return;
+      }
+      signupMutation.mutate({
+        email: trimmedEmail,
+        password: trimmedPassword,
+        name: trimmedName,
+        countryCode: countryCode,
+        phone: trimmedPhone,
+      });
     } else {
       loginMutation.mutate({ email: trimmedEmail, password: trimmedPassword });
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    try {
+      await loginAsGuest();
+      router.replace('/(tabs)/home' as any);
+    } catch (error) {
+      console.error('Guest login error:', error);
+      Alert.alert('Error', 'Unable to continue as guest');
     }
   };
 
@@ -81,21 +118,14 @@ export default function AuthScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardView}
         >
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.content}>
               <View style={styles.header}>
-                <View style={styles.logoContainer}>
-                  <LinearGradient
-                    colors={['#1a1f3a', '#2d3561']}
-                    style={styles.logoGradient}
-                  >
-                    <Text style={styles.logoText}>💎</Text>
-                  </LinearGradient>
-                </View>
-                <Text style={styles.title}>Luxury Jewelry</Text>
+                <Text style={styles.brandName}>Celara</Text>
+                <Text style={styles.tagline}>Crafted by Science. Worn with Soul.</Text>
                 <Text style={styles.subtitle}>
                   {isSignup ? 'Create your account' : 'Welcome back'}
                 </Text>
@@ -104,7 +134,7 @@ export default function AuthScreen() {
               <View style={styles.form}>
                 {isSignup && (
                   <View style={styles.inputContainer}>
-                    <User size={20} color="#1a1f3a" style={styles.inputIcon} />
+                    <UserIcon size={20} color="#1a1f3a" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Full Name"
@@ -131,6 +161,51 @@ export default function AuthScreen() {
                   />
                 </View>
 
+                {isSignup && (
+                  <View style={styles.phoneContainer}>
+                    <TouchableOpacity
+                      style={styles.countryCodeButton}
+                      onPress={() => setShowCountryPicker(!showCountryPicker)}
+                    >
+                      <Globe size={20} color="#1a1f3a" />
+                      <Text style={styles.countryCodeText}>{countryCode}</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.phoneInputContainer}>
+                      <Phone size={20} color="#1a1f3a" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="Phone Number"
+                        placeholderTextColor="#9ca3af"
+                        value={phone}
+                        onChangeText={setPhone}
+                        keyboardType="phone-pad"
+                        editable={!isLoading}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {isSignup && showCountryPicker && (
+                  <View style={styles.countryPicker}>
+                    <ScrollView style={styles.countryPickerScroll} nestedScrollEnabled>
+                      {COUNTRY_CODES.map((item) => (
+                        <TouchableOpacity
+                          key={item.code}
+                          style={styles.countryItem}
+                          onPress={() => {
+                            setCountryCode(item.code);
+                            setShowCountryPicker(false);
+                          }}
+                        >
+                          <Text style={styles.countryItemCode}>{item.code}</Text>
+                          <Text style={styles.countryItemCountry}>{item.country}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
                 <View style={styles.inputContainer}>
                   <Lock size={20} color="#1a1f3a" style={styles.inputIcon} />
                   <TextInput
@@ -154,15 +229,20 @@ export default function AuthScreen() {
                   </TouchableOpacity>
                 </View>
 
+                {isSignup && (
+                  <View style={styles.verificationNote}>
+                    <Text style={styles.verificationText}>
+                      📱 Phone verification will be required after signup
+                    </Text>
+                  </View>
+                )}
+
                 <TouchableOpacity
                   style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
                   onPress={handleSubmit}
                   disabled={isLoading}
                 >
-                  <LinearGradient
-                    colors={['#1a1f3a', '#2d3561']}
-                    style={styles.submitGradient}
-                  >
+                  <LinearGradient colors={['#1a1f3a', '#2d3561']} style={styles.submitGradient}>
                     {isLoading ? (
                       <ActivityIndicator color="#ffffff" />
                     ) : (
@@ -180,10 +260,20 @@ export default function AuthScreen() {
                 </View>
 
                 <TouchableOpacity
+                  style={styles.guestButton}
+                  onPress={handleGuestLogin}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.guestButtonText}>Continue as Guest</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                   style={styles.switchButton}
                   onPress={() => {
                     setIsSignup(!isSignup);
                     setName('');
+                    setPhone('');
+                    setShowCountryPicker(false);
                   }}
                   disabled={isLoading}
                 >
@@ -232,30 +322,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 40,
   },
-  logoContainer: {
-    marginBottom: 24,
-  },
-  logoGradient: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1a1f3a',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  logoText: {
+  brandName: {
     fontSize: 48,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700' as const,
-    color: '#1a1f3a',
+    fontWeight: '300' as const,
+    color: '#D4AF37',
+    letterSpacing: 4,
     marginBottom: 8,
-    letterSpacing: 0.5,
+  },
+  tagline: {
+    fontSize: 13,
+    color: '#6b7280',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase' as const,
+    marginBottom: 24,
   },
   subtitle: {
     fontSize: 16,
@@ -280,6 +359,79 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  phoneContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 12,
+  },
+  countryCodeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    minWidth: 100,
+    gap: 8,
+  },
+  countryCodeText: {
+    fontSize: 16,
+    color: '#1a1f3a',
+    fontWeight: '600' as const,
+  },
+  phoneInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  countryPicker: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  countryPickerScroll: {
+    maxHeight: 200,
+  },
+  countryItem: {
+    flexDirection: 'row',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  countryItemCode: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: '#1a1f3a',
+    width: 60,
+  },
+  countryItemCountry: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
   inputIcon: {
     marginRight: 12,
   },
@@ -296,6 +448,19 @@ const styles = StyleSheet.create({
     position: 'absolute' as const,
     right: 16,
     padding: 8,
+  },
+  verificationNote: {
+    backgroundColor: '#f0f9ff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+  },
+  verificationText: {
+    fontSize: 13,
+    color: '#0369a1',
+    textAlign: 'center' as const,
   },
   submitButton: {
     marginTop: 8,
@@ -336,6 +501,21 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontSize: 14,
     fontWeight: '500' as const,
+  },
+  guestButton: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 16,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+  },
+  guestButtonText: {
+    color: '#1a1f3a',
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   switchButton: {
     alignItems: 'center',

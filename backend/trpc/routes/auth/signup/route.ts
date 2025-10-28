@@ -11,6 +11,8 @@ export const signupProcedure = publicProcedure
     email: z.string().email(),
     password: z.string().min(6),
     name: z.string().min(2),
+    countryCode: z.string().optional(),
+    phone: z.string().optional(),
   }))
   .mutation(async ({ input }) => {
     const { db } = await connectToDatabase();
@@ -31,6 +33,9 @@ export const signupProcedure = publicProcedure
       email: input.email,
       password: hashedPassword,
       name: input.name,
+      countryCode: input.countryCode,
+      phone: input.phone,
+      phoneVerified: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

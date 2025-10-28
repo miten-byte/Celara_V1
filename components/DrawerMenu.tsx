@@ -25,51 +25,50 @@ interface DrawerMenuProps {
 
 interface MenuItem {
   title: string;
+  route?: string;
   items?: string[];
 }
 
 const MENU_DATA: MenuItem[] = [
   {
-    title: "JEWELLERY",
-    items: ["Rings", "Earrings", "Wristwear"],
+    title: "Rings",
+    route: "/(tabs)/shop",
+    items: [],
   },
   {
-    title: "COLLECTIONS",
-    items: [
-      "Dazzling Brilliance",
-      "Promise Of Forever",
-      "Timeless Treasure",
-      "Twinfinity",
-      "Enchant",
-      "Lyrical Fantasy",
-      "Basket Of Love",
-      "Everday Allure",
-      "Fashion Forward Rings",
-      "Tiryah",
-      "Wristwear",
-    ],
+    title: "Earrings",
+    route: "/(tabs)/shop",
+    items: [],
   },
   {
-    title: "CREATE YOUR OWN",
-    items: [
-      "Custom Rings",
-      "Custom Earrings",
-      "Custom Necklaces",
-      "Custom Bracelets",
-    ],
+    title: "Pendants",
+    route: "/(tabs)/shop",
+    items: [],
   },
   {
-    title: "DIAMONDS",
-    items: [
-      "Round Cut",
-      "Princess Cut",
-      "Oval Cut",
-      "Emerald Cut",
-      "Cushion Cut",
-      "Pear Cut",
-      "Marquise Cut",
-      "Radiant Cut",
-    ],
+    title: "Necklaces",
+    route: "/(tabs)/shop",
+    items: [],
+  },
+  {
+    title: "Bracelets",
+    route: "/(tabs)/shop",
+    items: [],
+  },
+  {
+    title: "Collections",
+    route: "/(tabs)/shop",
+    items: [],
+  },
+  {
+    title: "Create Your Own",
+    route: "/(tabs)/shop",
+    items: [],
+  },
+  {
+    title: "Diamonds",
+    route: "/diamonds/dashboard",
+    items: [],
   },
 ];
 
@@ -77,12 +76,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
-    JEWELLERY: true,
-    COLLECTIONS: true,
-    "CREATE YOUR OWN": true,
-    DIAMONDS: true,
-  });
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({});
   const [slideAnim] = useState(new Animated.Value(-DRAWER_WIDTH));
 
   React.useEffect(() => {
@@ -109,15 +103,22 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
     }));
   };
 
+  const handleMainSectionPress = (section: MenuItem) => {
+    console.log("Navigate to:", section.title);
+    
+    if (section.items && section.items.length > 0) {
+      toggleSection(section.title);
+    } else {
+      if (section.route) {
+        router.push(section.route as any);
+      }
+      onClose();
+    }
+  };
+
   const handleItemPress = (item: string, section: string) => {
     console.log("Navigate to:", item, "in", section);
-    
-    if (section === "DIAMONDS") {
-      router.push("/diamonds/dashboard");
-    } else {
-      router.push("/(tabs)/shop");
-    }
-    
+    router.push("/(tabs)/shop" as any);
     onClose();
   };
 
@@ -165,18 +166,23 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
               {MENU_DATA.map((section) => (
                 <View key={section.title} style={styles.section}>
                   <TouchableOpacity
-                    style={styles.sectionHeader}
-                    onPress={() => toggleSection(section.title)}
+                    style={styles.mainSectionButton}
+                    onPress={() => handleMainSectionPress(section)}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.sectionTitle}>{section.title}</Text>
-                    {expandedSections[section.title] ? (
-                      <ChevronDown color={Colors.light.primary} size={20} />
+                    <Text style={styles.mainSectionText}>{section.title}</Text>
+                    {section.items && section.items.length > 0 ? (
+                      expandedSections[section.title] ? (
+                        <ChevronDown color={Colors.light.textSecondary} size={20} />
+                      ) : (
+                        <ChevronRight color={Colors.light.textSecondary} size={20} />
+                      )
                     ) : (
                       <ChevronRight color={Colors.light.textSecondary} size={20} />
                     )}
                   </TouchableOpacity>
 
-                  {expandedSections[section.title] && section.items && (
+                  {expandedSections[section.title] && section.items && section.items.length > 0 && (
                     <View style={styles.itemsContainer}>
                       {section.items.map((item) => (
                         <TouchableOpacity
@@ -203,7 +209,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                   onClose();
                 }}
               >
-                <Text style={styles.aboutItemText}>ABOUT US</Text>
+                <Text style={styles.aboutItemText}>About Us</Text>
                 <ChevronRight color={Colors.light.textSecondary} size={20} />
               </TouchableOpacity>
             </ScrollView>
@@ -262,21 +268,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    marginBottom: 8,
+    marginBottom: 0,
   },
-  sectionHeader: {
+  mainSectionButton: {
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: Colors.light.primary,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    backgroundColor: Colors.light.white,
   },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "600" as const,
-    color: Colors.light.white,
-    letterSpacing: 1.2,
+  mainSectionText: {
+    fontSize: 16,
+    fontWeight: "500" as const,
+    color: Colors.light.text,
   },
   itemsContainer: {
     backgroundColor: Colors.light.white,
@@ -306,9 +313,8 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.light.border,
   },
   aboutItemText: {
-    fontSize: 14,
-    fontWeight: "600" as const,
+    fontSize: 16,
+    fontWeight: "500" as const,
     color: Colors.light.text,
-    letterSpacing: 1.2,
   },
 });

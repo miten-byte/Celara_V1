@@ -9,11 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Send, Sparkles, Wand2, ThumbsUp, ThumbsDown } from "lucide-react-native";
-import { Image } from "expo-image";
+import { Send, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react-native";
 import { createRorkTool, useRorkAgent } from "@rork/toolkit-sdk";
 import { z } from "zod";
 import { useRouter } from "expo-router";
@@ -33,6 +31,7 @@ export default function ChatScreen() {
 
   const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<{ [key: string]: boolean }>({});
+  const [generatedImages, setGeneratedImages] = useState<{ [toolCallId: string]: { uri: string; description: string } }>({});
   
   const sessionId = useMemo(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
   
@@ -165,92 +164,9 @@ export default function ChatScreen() {
         zodSchema: z.object({
           description: z.string().describe("Detailed description of the jewelry design including type (ring, necklace, earring, etc.), style, materials, gemstones, and any specific features"),
         }),
-        async execute(params) {
-          try {
-            console.log("[Chat] Starting design generation for:", params.description);
-            setIsGeneratingDesign(true);
-            
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 60000);
-            
-            const response = await fetch("https://toolkit.rork.com/images/generate/", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                prompt: `High-quality professional product photography of ${params.description}. Studio lighting, white background, jewelry photography, ultra detailed, 8K resolution, luxury jewelry aesthetic.`,
-                size: "1024x1024",
-              }),
-              signal: controller.signal,
-            });
-            
-            clearTimeout(timeoutId);
-            console.log("[Chat] Image generation response status:", response.status);
-            
-            let data: any;
-            try {
-              const responseText = await response.text();
-              console.log("[Chat] Response text length:", responseText.length);
-              data = JSON.parse(responseText);
-            } catch (parseError) {
-              console.error("[Chat] Failed to parse response:", parseError);
-              throw new Error("Invalid response from image generation API");
-            }
-            
-            if (!response.ok) {
-              console.error("[Chat] Image generation failed:", response.status, JSON.stringify(data).substring(0, 200));
-              throw new Error(`Failed to generate design: ${response.status}`);
-            }
-
-            console.log("[Chat] Image generation successful, response keys:", Object.keys(data || {}));
-            
-            setIsGeneratingDesign(false);
-            
-            if (!data || !data.image) {
-              console.error("[Chat] No image object in response:", JSON.stringify(data).substring(0, 500));
-              throw new Error("No image data received from API");
-            }
-            
-            const base64Data = data.image.base64Data || data.image.base64 || data.base64Data || data.base64;
-            const mimeType = data.image.mimeType || data.image.type || data.mimeType || "image/png";
-            
-            console.log("[Chat] Image data check:", {
-              hasMimeType: !!mimeType,
-              hasBase64: !!base64Data,
-              base64Length: base64Data?.length,
-              base64Prefix: base64Data?.substring(0, 20),
-            });
-            
-            if (!base64Data) {
-              console.error("[Chat] Invalid image data received:", JSON.stringify(data).substring(0, 500));
-              throw new Error("Invalid image data received from API");
-            }
-            
-            const imageUri = `data:${mimeType};base64,${base64Data}`;
-            console.log("[Chat] Generated image URI prefix:", imageUri.substring(0, 50));
-            
-            return JSON.stringify({
-              success: true,
-              image: imageUri,
-              description: params.description,
-            });
-          } catch (error) {
-            setIsGeneratingDesign(false);
-            console.error("[Chat] Design generation error:", error);
-            
-            if (error instanceof Error && error.name === "AbortError") {
-              return JSON.stringify({ 
-                success: false, 
-                error: "Image generation timed out. Please try again." 
-              });
-            }
-            
-            return JSON.stringify({ 
-              success: false, 
-              error: error instanceof Error ? error.message : "Failed to generate design" 
-            });
-          }
+        execute(params) {
+          console.log("[Chat] Design generation tool called for:", params.description);
+          return `I understand you want a design for: ${params.description}. However, custom design generation is currently being set up. For now, I recommend browsing our existing collection or contacting our design team directly at design@celara.com for custom jewelry requests.`;
         },
       }),
     },
@@ -418,63 +334,7 @@ export default function ChatScreen() {
 
                       case "output-available":
                         if (toolName === "generateDesign") {
-                          try {
-                            const output = typeof part.output === "string" ? JSON.parse(part.output) : part.output;
-                            console.log("[Chat] Design output received:", { hasSuccess: !!output.success, hasImage: !!output.image, imagePrefix: output.image?.substring(0, 30) });
-                            
-                            if (output.success && output.image) {
-                              return (
-                                <View key={`${message.id}-${index}`} style={styles.designResult}>
-                                  <Image
-                                    source={{ uri: output.image }}
-                                    style={styles.designImage}
-                                    contentFit="cover"
-                                    onLoad={() => console.log("[Chat] Image loaded successfully")}
-                                    onError={(error) => {
-                                      console.error("[Chat] Image load error:", error);
-                                      console.error("[Chat] Image URI:", output.image?.substring(0, 100));
-                                    }}
-                                  />
-                                  <Text style={styles.designDescription}>{output.description}</Text>
-                                  <TouchableOpacity
-                                    style={styles.getQuoteButton}
-                                    onPress={() => {
-                                      Alert.alert(
-                                        "Request a Quote",
-                                        "Our jewelry consultants will contact you within 24 hours with a detailed quote for your custom design.",
-                                        [
-                                          { text: "Cancel", style: "cancel" },
-                                          {
-                                            text: "Continue",
-                                            onPress: () => {
-                                              Alert.alert("Quote Requested", "We'll be in touch soon!");
-                                            },
-                                          },
-                                        ]
-                                      );
-                                    }}
-                                  >
-                                    <Wand2 color={Colors.light.white} size={18} />
-                                    <Text style={styles.getQuoteText}>Get Quote</Text>
-                                  </TouchableOpacity>
-                                </View>
-                              );
-                            } else {
-                              console.error("[Chat] Invalid design output:", JSON.stringify(output));
-                              return (
-                                <View key={`${message.id}-${index}`} style={styles.toolError}>
-                                  <Text style={styles.toolErrorText}>Failed to generate design: {output.error || "Unknown error"}. Please try again.</Text>
-                                </View>
-                              );
-                            }
-                          } catch (e) {
-                            console.error("[Chat] Error parsing design output:", e, part.output);
-                            return (
-                              <View key={`${message.id}-${index}`} style={styles.toolError}>
-                                <Text style={styles.toolErrorText}>Error displaying design. Please try again.</Text>
-                              </View>
-                            );
-                          }
+                          return null;
                         }
                         return (
                           <View key={`${message.id}-${index}`} style={styles.toolResult}>

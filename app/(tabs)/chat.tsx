@@ -170,6 +170,9 @@ export default function ChatScreen() {
             console.log("[Chat] Starting design generation for:", params.description);
             setIsGeneratingDesign(true);
             
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            
             const response = await fetch("https://toolkit.rork.com/images/generate/", {
               method: "POST",
               headers: {
@@ -179,18 +182,28 @@ export default function ChatScreen() {
                 prompt: `High-quality professional product photography of ${params.description}. Studio lighting, white background, jewelry photography, ultra detailed, 8K resolution, luxury jewelry aesthetic.`,
                 size: "1024x1024",
               }),
+              signal: controller.signal,
             });
-
+            
+            clearTimeout(timeoutId);
             console.log("[Chat] Image generation response status:", response.status);
             
+            let data: any;
+            try {
+              const responseText = await response.text();
+              console.log("[Chat] Response text length:", responseText.length);
+              data = JSON.parse(responseText);
+            } catch (parseError) {
+              console.error("[Chat] Failed to parse response:", parseError);
+              throw new Error("Invalid response from image generation API");
+            }
+            
             if (!response.ok) {
-              const errorText = await response.text();
-              console.error("[Chat] Image generation failed:", response.status, errorText);
+              console.error("[Chat] Image generation failed:", response.status, JSON.stringify(data).substring(0, 200));
               throw new Error(`Failed to generate design: ${response.status}`);
             }
 
-            const data = await response.json();
-            console.log("[Chat] Image generation successful, full response:", JSON.stringify(data).substring(0, 200));
+            console.log("[Chat] Image generation successful, response keys:", Object.keys(data || {}));
             
             setIsGeneratingDesign(false);
             
@@ -225,6 +238,14 @@ export default function ChatScreen() {
           } catch (error) {
             setIsGeneratingDesign(false);
             console.error("[Chat] Design generation error:", error);
+            
+            if (error instanceof Error && error.name === "AbortError") {
+              return JSON.stringify({ 
+                success: false, 
+                error: "Image generation timed out. Please try again." 
+              });
+            }
+            
             return JSON.stringify({ 
               success: false, 
               error: error instanceof Error ? error.message : "Failed to generate design" 

@@ -37,6 +37,7 @@ export default function ChatScreen() {
   
   const saveConversationMutation = trpc.ai.conversation.save.useMutation();
   const feedbackMutation = trpc.ai.conversation.feedback.useMutation();
+  const requestImageMutation = trpc.ai.image.request.useMutation();
 
   const { messages, error, sendMessage } = useRorkAgent({
     tools: {
@@ -169,21 +170,12 @@ export default function ChatScreen() {
           console.log("[Chat] Design generation tool called:", toolCallId, params.description);
           
           try {
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/trpc/ai.image.request`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                sessionId,
-                toolCallId,
-                prompt: params.description,
-              }),
+            const result = await requestImageMutation.mutateAsync({
+              sessionId,
+              toolCallId,
+              prompt: params.description,
             });
 
-            if (!response.ok) {
-              throw new Error(`Request failed: ${response.status}`);
-            }
-
-            const result = await response.json();
             console.log("[Chat] Image request created:", result);
 
             setGeneratedImages(prev => ({
@@ -219,11 +211,8 @@ export default function ChatScreen() {
     const interval = setInterval(() => {
       pendingImages.forEach(async ([toolCallId, img]) => {
         try {
-          const response = await fetch(
-            `${process.env.EXPO_PUBLIC_API_URL}/api/trpc/ai.image.status?input=${encodeURIComponent(JSON.stringify({ toolCallId }))}`
-          );
-          const result = await response.json();
-          const data = result.result?.data;
+          const { trpcClient } = await import("@/lib/trpc");
+          const data = await trpcClient.ai.image.status.query({ toolCallId });
 
           if (data && data.status !== img.status) {
             console.log("[Chat] Image status updated:", toolCallId, data.status);

@@ -18,6 +18,8 @@ import { listKnowledgeProcedure } from "./routes/ai/knowledge/list/route";
 import { updateKnowledgeProcedure } from "./routes/ai/knowledge/update/route";
 import { saveConversationProcedure } from "./routes/ai/conversation/save/route";
 import { addFeedbackProcedure } from "./routes/ai/conversation/feedback/route";
+import { requestImageGenerationProcedure } from "./routes/ai/image/request/route";
+import { getImageStatusProcedure } from "./routes/ai/image/status/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -53,6 +55,10 @@ export const appRouter = createTRPCRouter({
     conversation: createTRPCRouter({
       save: saveConversationProcedure,
       feedback: addFeedbackProcedure,
+    }),
+    image: createTRPCRouter({
+      request: requestImageGenerationProcedure,
+      status: getImageStatusProcedure,
     }),
   }),
 });

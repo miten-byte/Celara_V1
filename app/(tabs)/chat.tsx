@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Send, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react-native";
@@ -29,9 +30,8 @@ export default function ChatScreen() {
   
   const productsQuery = trpc.products.list.useQuery();
 
-  const [isGeneratingDesign, setIsGeneratingDesign] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<{ [key: string]: boolean }>({});
-  const [generatedImages, setGeneratedImages] = useState<{ [toolCallId: string]: { uri: string; description: string } }>({});
+  const [generatedImages, setGeneratedImages] = useState<{ [toolCallId: string]: { uri: string; description: string; status: string } }>({});
   
   const sessionId = useMemo(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
   
@@ -164,9 +164,42 @@ export default function ChatScreen() {
         zodSchema: z.object({
           description: z.string().describe("Detailed description of the jewelry design including type (ring, necklace, earring, etc.), style, materials, gemstones, and any specific features"),
         }),
-        execute(params) {
-          console.log("[Chat] Design generation tool called for:", params.description);
-          return `I understand you want a design for: ${params.description}. However, custom design generation is currently being set up. For now, I recommend browsing our existing collection or contacting our design team directly at design@celara.com for custom jewelry requests.`;
+        async execute(params: { description: string }) {
+          const toolCallId = `design-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          console.log("[Chat] Design generation tool called:", toolCallId, params.description);
+          
+          try {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/trpc/ai.image.request`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                sessionId,
+                toolCallId,
+                prompt: params.description,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error(`Request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log("[Chat] Image request created:", result);
+
+            setGeneratedImages(prev => ({
+              ...prev,
+              [toolCallId]: {
+                uri: "",
+                description: params.description,
+                status: "pending",
+              },
+            }));
+
+            return JSON.stringify({ toolCallId, status: "pending", message: `Generating custom design for: ${params.description}` });
+          } catch (error) {
+            console.error("[Chat] Image request error:", error);
+            return `I apologize, but I'm having trouble generating the design right now. Please try again or contact our design team at design@celara.com for custom jewelry requests.`;
+          }
         },
       }),
     },
@@ -175,6 +208,43 @@ export default function ChatScreen() {
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
+
+  useEffect(() => {
+    const pendingImages = Object.entries(generatedImages).filter(
+      ([_, img]) => img.status === "pending" || img.status === "processing"
+    );
+
+    if (pendingImages.length === 0) return;
+
+    const interval = setInterval(() => {
+      pendingImages.forEach(async ([toolCallId, img]) => {
+        try {
+          const response = await fetch(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/trpc/ai.image.status?input=${encodeURIComponent(JSON.stringify({ toolCallId }))}`
+          );
+          const result = await response.json();
+          const data = result.result?.data;
+
+          if (data && data.status !== img.status) {
+            console.log("[Chat] Image status updated:", toolCallId, data.status);
+            
+            setGeneratedImages(prev => ({
+              ...prev,
+              [toolCallId]: {
+                ...prev[toolCallId],
+                status: data.status,
+                uri: data.imageData || "",
+              },
+            }));
+          }
+        } catch (error) {
+          console.error("[Chat] Image status check error:", error);
+        }
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [generatedImages]);
 
   const handleSend = () => {
     if (input.trim()) {
@@ -334,7 +404,51 @@ export default function ChatScreen() {
 
                       case "output-available":
                         if (toolName === "generateDesign") {
-                          return null;
+                          let toolCallId: string | undefined;
+                          try {
+                            const output = typeof part.output === "string" ? JSON.parse(part.output) : part.output;
+                            toolCallId = output?.toolCallId;
+                          } catch (e) {
+                            console.log("[Chat] Could not parse tool output", e);
+                          }
+
+                          if (!toolCallId) {
+                            return null;
+                          }
+
+                          const imageData = generatedImages[toolCallId];
+                          
+                          return (
+                            <View key={`${message.id}-${index}`} style={styles.designResult}>
+                              {imageData?.status === "completed" && imageData.uri ? (
+                                <>
+                                  <Image
+                                    source={{ uri: imageData.uri }}
+                                    style={styles.designImage}
+                                    resizeMode="contain"
+                                  />
+                                  <Text style={styles.designDescription}>
+                                    {imageData.description}
+                                  </Text>
+                                </>
+                              ) : imageData?.status === "failed" ? (
+                                <View style={styles.toolError}>
+                                  <Text style={styles.toolErrorText}>
+                                    Failed to generate design. Please try again.
+                                  </Text>
+                                </View>
+                              ) : (
+                                <View style={styles.toolCall}>
+                                  <ActivityIndicator size="small" color={Colors.light.primary} />
+                                  <Text style={styles.toolText}>
+                                    {imageData?.status === "processing" 
+                                      ? "Processing your design..." 
+                                      : "Preparing to generate design..."}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                          );
                         }
                         return (
                           <View key={`${message.id}-${index}`} style={styles.toolResult}>

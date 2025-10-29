@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
+import { openai } from "../../../../lib/openai";
 
 export const generateImageProcedure = publicProcedure
   .input(
@@ -11,41 +12,25 @@ export const generateImageProcedure = publicProcedure
     const { prompt } = input;
 
     try {
-      console.log("[Image] Generating with prompt:", prompt);
+      console.log("[Image] Generating with OpenAI DALL-E:", prompt);
 
-      const toolkitUrl = process.env.EXPO_PUBLIC_TOOLKIT_URL || "https://toolkit.rork.com";
-      const imageGenUrl = new URL("/images/generate/", toolkitUrl).toString();
-      
-      console.log("[Image] Calling API:", imageGenUrl);
-
-      const response = await fetch(imageGenUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          size: "1024x1024",
-        }),
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
+        response_format: "url",
       });
 
-      console.log("[Image] Response status:", response.status);
+      const imageUrl = response.data?.[0]?.url;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Image] API error:", response.status, errorText);
-        throw new Error(`Image generation failed: ${response.statusText}`);
+      if (!imageUrl) {
+        throw new Error("No image URL in response");
       }
 
-      const data = await response.json();
-      console.log("[Image] Response data received:", !!data.image);
-      
-      if (!data.image || !data.image.base64Data) {
-        throw new Error("Invalid response from image generation API");
-      }
-      
-      const imageUrl = `data:${data.image.mimeType};base64,${data.image.base64Data}`;
-      
+      console.log("[Image] Generated successfully:", imageUrl);
+
       return {
         imageUrl,
         id: Date.now().toString(),

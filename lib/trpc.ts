@@ -16,25 +16,19 @@ const getBaseUrl = () => {
   );
 };
 
-export const getTRPCClient = () => {
-  return trpc.createClient({
-    links: [
-      httpBatchLink({
-        url: `${getBaseUrl()}/api/trpc`,
-        transformer: superjson,
-        async headers() {
-          const token = await AsyncStorage.getItem('adminToken');
-          return token ? { authorization: `Bearer ${token}` } : {};
-        },
-      }),
-    ],
-  });
+const getBaseUrlSafe = () => {
+  try {
+    return getBaseUrl();
+  } catch (error) {
+    console.error("Error getting base URL:", error);
+    return "";
+  }
 };
 
 export const trpcClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${getBaseUrl()}/api/trpc`,
+      url: `${getBaseUrlSafe()}/api/trpc`,
       transformer: superjson,
       async headers() {
         const token = await AsyncStorage.getItem('adminToken');

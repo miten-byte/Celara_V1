@@ -43,18 +43,20 @@ export const chatProcedure = publicProcedure
         content: msg.content,
       }));
 
-      const response = await fetch(
-        new URL("/agent/chat", process.env.EXPO_PUBLIC_TOOLKIT_URL || "https://toolkit.rork.com").toString(),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messages: conversationHistory,
-          }),
-        }
-      );
+      const toolkitUrl = process.env.EXPO_PUBLIC_TOOLKIT_URL || "https://toolkit.rork.com";
+      const chatUrl = new URL("/agent/chat", toolkitUrl).toString();
+      
+      console.log("[Chat] Calling API:", chatUrl);
+
+      const response = await fetch(chatUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: conversationHistory,
+        }),
+      });
 
       if (!response.ok) {
         const errorText = await response.text();

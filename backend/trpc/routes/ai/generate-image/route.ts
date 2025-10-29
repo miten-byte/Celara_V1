@@ -13,7 +13,12 @@ export const generateImageProcedure = publicProcedure
     try {
       console.log("[Image] Generating with prompt:", prompt);
 
-      const response = await fetch("https://toolkit.rork.com/images/generate/", {
+      const toolkitUrl = process.env.EXPO_PUBLIC_TOOLKIT_URL || "https://toolkit.rork.com";
+      const imageGenUrl = new URL("/images/generate/", toolkitUrl).toString();
+      
+      console.log("[Image] Calling API:", imageGenUrl);
+
+      const response = await fetch(imageGenUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -24,6 +29,8 @@ export const generateImageProcedure = publicProcedure
         }),
       });
 
+      console.log("[Image] Response status:", response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("[Image] API error:", response.status, errorText);
@@ -31,7 +38,11 @@ export const generateImageProcedure = publicProcedure
       }
 
       const data = await response.json();
-      console.log("[Image] Success:", data);
+      console.log("[Image] Response data received:", !!data.image);
+      
+      if (!data.image || !data.image.base64Data) {
+        throw new Error("Invalid response from image generation API");
+      }
       
       const imageUrl = `data:${data.image.mimeType};base64,${data.image.base64Data}`;
       

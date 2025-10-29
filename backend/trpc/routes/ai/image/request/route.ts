@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../../create-context";
 import { ImageGeneration } from "../../../../../models/image-generation.model";
+import { connectToDatabase } from "../../../../../lib/mongodb";
 
 export const requestImageGenerationProcedure = publicProcedure
   .input(
@@ -12,6 +13,8 @@ export const requestImageGenerationProcedure = publicProcedure
   )
   .mutation(async ({ input }) => {
     console.log("[Image Gen] Creating request:", input.toolCallId);
+
+    await connectToDatabase();
 
     const imageGenRequest = await ImageGeneration.create({
       sessionId: input.sessionId,
@@ -33,6 +36,8 @@ export const requestImageGenerationProcedure = publicProcedure
 async function processImageGeneration(toolCallId: string, prompt: string) {
   try {
     console.log("[Image Gen] Starting generation for:", toolCallId);
+
+    await connectToDatabase();
 
     await ImageGeneration.findOneAndUpdate(
       { toolCallId },

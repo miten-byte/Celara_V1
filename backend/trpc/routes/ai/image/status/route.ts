@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { publicProcedure } from "../../../../create-context";
 import { ImageGeneration } from "../../../../../models/image-generation.model";
+import { connectToDatabase } from "../../../../../lib/mongodb";
 
 export const getImageStatusProcedure = publicProcedure
   .input(
@@ -10,6 +11,8 @@ export const getImageStatusProcedure = publicProcedure
   )
   .query(async ({ input }) => {
     console.log("[Image Status] Checking status for:", input.toolCallId);
+
+    await connectToDatabase();
 
     const imageGen = await ImageGeneration.findOne({
       toolCallId: input.toolCallId,

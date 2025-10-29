@@ -125,10 +125,11 @@ export default function ChatScreen() {
         }),
         async execute(params) {
           try {
-            const result = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/trpc/ai.knowledge.search?input=${encodeURIComponent(JSON.stringify(params))}`).then(r => r.json());
+            const { trpcClient } = await import("@/lib/trpc");
+            const result = await trpcClient.ai.knowledge.search.query(params);
             
-            if (result.result?.data?.results && result.result.data.results.length > 0) {
-              const knowledge = result.result.data.results.map((k: any) => ({
+            if (result.results && result.results.length > 0) {
+              const knowledge = result.results.map((k: any) => ({
                 title: k.title,
                 content: k.content,
                 category: k.category,

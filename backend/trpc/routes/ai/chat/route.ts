@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure } from "../../../create-context";
 import { Chat } from "../../../../models/chat.model";
 import { openai } from "../../../../lib/openai";
+import { connectToDatabase } from "../../../../lib/mongodb";
 
 export const chatProcedure = publicProcedure
   .input(
@@ -13,6 +14,8 @@ export const chatProcedure = publicProcedure
   )
   .mutation(async ({ input }) => {
     const { userId, message, chatId } = input;
+
+    await connectToDatabase();
 
     let chat;
     if (chatId) {

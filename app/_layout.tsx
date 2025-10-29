@@ -7,12 +7,13 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { CartProvider } from "@/contexts/CartContext";
 
 import { UserProvider } from "@/contexts/UserContext";
-import { trpc, trpcClient } from "@/lib/trpc";
+import { trpc, getTRPCClient } from "@/lib/trpc";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+const trpcClient = getTRPCClient();
 
 function RootLayoutNav() {
   return (

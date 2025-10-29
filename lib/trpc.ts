@@ -1,5 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
-import { createTRPCClient, httpLink } from "@trpc/client";
+import { createTRPCClient, httpBatchLink } from "@trpc/client";
 import type { AppRouter } from "@/backend/trpc/app-router";
 import superjson from "superjson";
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,9 +16,24 @@ const getBaseUrl = () => {
   );
 };
 
+export const getTRPCClient = () => {
+  return trpc.createClient({
+    links: [
+      httpBatchLink({
+        url: `${getBaseUrl()}/api/trpc`,
+        transformer: superjson,
+        async headers() {
+          const token = await AsyncStorage.getItem('adminToken');
+          return token ? { authorization: `Bearer ${token}` } : {};
+        },
+      }),
+    ],
+  });
+};
+
 export const trpcClient = createTRPCClient<AppRouter>({
   links: [
-    httpLink({
+    httpBatchLink({
       url: `${getBaseUrl()}/api/trpc`,
       transformer: superjson,
       async headers() {

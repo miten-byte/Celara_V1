@@ -9,9 +9,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Send, Sparkles } from "lucide-react-native";
+import { Send, Sparkles, Wifi, WifiOff } from "lucide-react-native";
 import { Image } from "expo-image";
 import Colors from "@/constants/colors";
 import { trpc } from "@/lib/trpc";
@@ -29,7 +30,38 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatId, setChatId] = useState<string | undefined>(undefined);
   const [userId] = useState<string>("user-" + Date.now());
+  const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "disconnected">("checking");
   const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const baseUrl = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+        console.log("[Chat] Testing connection to:", baseUrl);
+        
+        if (!baseUrl) {
+          console.error("[Chat] No base URL configured");
+          setConnectionStatus("disconnected");
+          return;
+        }
+
+        const response = await fetch(`${baseUrl}/api/health`);
+        const data = await response.json();
+        console.log("[Chat] Health check:", data);
+        
+        if (data.status === "ok") {
+          setConnectionStatus("connected");
+        } else {
+          setConnectionStatus("disconnected");
+        }
+      } catch (error) {
+        console.error("[Chat] Connection test failed:", error);
+        setConnectionStatus("disconnected");
+      }
+    };
+
+    checkConnection();
+  }, []);
 
   const chatMutation = trpc.ai.chat.useMutation({
     onSuccess: (data: { chatId: string; message: string; messages: Message[] }) => {
@@ -37,13 +69,15 @@ export default function ChatScreen() {
       setChatId(data.chatId);
       setMessages(data.messages as Message[]);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error("[Chat] Error:", error);
+      console.error("[Chat] Error details:", JSON.stringify(error, null, 2));
+      const errorMessage = error?.message || error?.data?.message || "Failed to connect to server. Please check your connection.";
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
+          content: `Error: ${errorMessage}`,
           timestamp: new Date(),
         },
       ]);
@@ -63,13 +97,15 @@ export default function ChatScreen() {
         },
       ]);
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       console.error("[Image] Error:", error);
+      console.error("[Image] Error details:", JSON.stringify(error, null, 2));
+      const errorMessage = error?.message || error?.data?.message || "Failed to generate image. Please try again.";
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Sorry, I couldn't generate the image. Please try again.",
+          content: `Error: ${errorMessage}`,
           timestamp: new Date(),
         },
       ]);
@@ -106,11 +142,35 @@ export default function ChatScreen() {
 
   const isLoading = chatMutation.isPending || generateImageMutation.isPending;
 
+  const handleTestConnection = () => {
+    Alert.alert(
+      "Connection Status",
+      connectionStatus === "connected" 
+        ? "✅ Backend is connected and working!"
+        : connectionStatus === "checking"
+        ? "⏳ Checking connection..."
+        : "❌ Cannot connect to backend. Make sure the server is running.",
+      [{ text: "OK" }]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Sparkles color={Colors.light.primary} size={24} />
         <Text style={styles.headerTitle}>AI Assistant</Text>
+        <TouchableOpacity 
+          style={styles.connectionButton}
+          onPress={handleTestConnection}
+        >
+          {connectionStatus === "connected" ? (
+            <Wifi color={Colors.light.success || "#10b981"} size={20} />
+          ) : connectionStatus === "checking" ? (
+            <ActivityIndicator size="small" color={Colors.light.textSecondary} />
+          ) : (
+            <WifiOff color={Colors.light.error || "#ef4444"} size={20} />
+          )}
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView
@@ -224,6 +284,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700" as const,
     color: Colors.light.text,
+    flex: 1,
+  },
+  connectionButton: {
+    padding: 8,
   },
   keyboardAvoid: {
     flex: 1,

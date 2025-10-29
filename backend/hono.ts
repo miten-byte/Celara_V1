@@ -18,7 +18,17 @@ app.use(
 );
 
 app.get("/", (c) => {
-  return c.json({ status: "ok", message: "API is running" });
+  return c.json({ status: "ok", message: "API is running", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/health", (c) => {
+  return c.json({ 
+    status: "ok", 
+    message: "Backend is healthy",
+    timestamp: new Date().toISOString(),
+    openai: process.env.OPENAI_API_KEY ? "configured" : "not configured",
+    mongodb: process.env.MONGODB_URI ? "configured" : "not configured"
+  });
 });
 
 export default app;

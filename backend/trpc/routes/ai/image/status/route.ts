@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { publicProcedure } from "@/backend/trpc/create-context";
-import { ImageGeneration } from "@/backend/models/image-generation.model";
+import { publicProcedure } from "../../../../create-context";
+import { ImageGeneration } from "../../../../../models/image-generation.model";
 
 export const getImageStatusProcedure = publicProcedure
   .input(
@@ -8,7 +8,7 @@ export const getImageStatusProcedure = publicProcedure
       toolCallId: z.string(),
     })
   )
-  .query(async ({ input }: { input: { toolCallId: string } }) => {
+  .query(async ({ input }) => {
     console.log("[Image Status] Checking status for:", input.toolCallId);
 
     const imageGen = await ImageGeneration.findOne({

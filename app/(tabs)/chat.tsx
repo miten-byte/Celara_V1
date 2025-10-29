@@ -432,6 +432,7 @@ export default function ChatScreen() {
                           const imageData = generatedImages[toolCallId];
                           
                           if (!imageData) {
+                            console.log("[Chat] No image data found for toolCallId:", toolCallId);
                             return null;
                           }
 
@@ -444,7 +445,8 @@ export default function ChatScreen() {
                                     style={styles.designImage}
                                     resizeMode="contain"
                                     onError={(e) => {
-                                      console.error("[Chat] Image load error for URI:", imageData.uri.substring(0, 50));
+                                      console.error("[Chat] Image load error:", e.nativeEvent.error);
+                                      console.error("[Chat] URI prefix:", imageData.uri.substring(0, 100));
                                       setImageLoadErrors(prev => ({ ...prev, [toolCallId]: true }));
                                     }}
                                     onLoad={() => {
@@ -458,7 +460,7 @@ export default function ChatScreen() {
                               ) : imageData.status === "failed" || imageLoadErrors[toolCallId] ? (
                                 <View style={styles.toolError}>
                                   <Text style={styles.toolErrorText}>
-                                    {imageData.error || "Failed to generate or load design. Please try again."}
+                                    {imageData.error || "Failed to generate or load design. Please try again later."}
                                   </Text>
                                 </View>
                               ) : (

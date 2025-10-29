@@ -191,21 +191,30 @@ export default function ChatScreen() {
 
             const data = await response.json();
             console.log("[Chat] Image generation successful, full response:", JSON.stringify(data).substring(0, 200));
-            console.log("[Chat] Image data check:", {
-              hasMimeType: !!data.image?.mimeType,
-              hasBase64: !!data.image?.base64Data,
-              base64Length: data.image?.base64Data?.length,
-              base64Prefix: data.image?.base64Data?.substring(0, 20),
-            });
             
             setIsGeneratingDesign(false);
             
-            if (!data.image?.base64Data || !data.image?.mimeType) {
+            if (!data || !data.image) {
+              console.error("[Chat] No image object in response:", JSON.stringify(data).substring(0, 500));
+              throw new Error("No image data received from API");
+            }
+            
+            const base64Data = data.image.base64Data || data.image.base64 || data.base64Data || data.base64;
+            const mimeType = data.image.mimeType || data.image.type || data.mimeType || "image/png";
+            
+            console.log("[Chat] Image data check:", {
+              hasMimeType: !!mimeType,
+              hasBase64: !!base64Data,
+              base64Length: base64Data?.length,
+              base64Prefix: base64Data?.substring(0, 20),
+            });
+            
+            if (!base64Data) {
               console.error("[Chat] Invalid image data received:", JSON.stringify(data).substring(0, 500));
               throw new Error("Invalid image data received from API");
             }
             
-            const imageUri = `data:${data.image.mimeType};base64,${data.image.base64Data}`;
+            const imageUri = `data:${mimeType};base64,${base64Data}`;
             console.log("[Chat] Generated image URI prefix:", imageUri.substring(0, 50));
             
             return JSON.stringify({
@@ -400,8 +409,9 @@ export default function ChatScreen() {
                                     style={styles.designImage}
                                     contentFit="cover"
                                     onLoad={() => console.log("[Chat] Image loaded successfully")}
-                                    onError={() => {
-                                      console.error("[Chat] Image load error for URI:", output.image?.substring(0, 100));
+                                    onError={(error) => {
+                                      console.error("[Chat] Image load error:", error);
+                                      console.error("[Chat] Image URI:", output.image?.substring(0, 100));
                                     }}
                                   />
                                   <Text style={styles.designDescription}>{output.description}</Text>

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { publicProcedure } from "../../../../create-context";
-import { ImageGeneration } from "../../../../../models/image-generation.model";
+import { publicProcedure } from "@/backend/trpc/create-context";
+import { ImageGeneration } from "@/backend/models/image-generation.model";
 
 export const getImageStatusProcedure = publicProcedure
   .input(

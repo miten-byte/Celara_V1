@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { publicProcedure } from "../../../../create-context";
-import { ImageGeneration } from "../../../../../models/image-generation.model";
+import { publicProcedure } from "@/backend/trpc/create-context";
+import { ImageGeneration } from "@/backend/models/image-generation.model";
 
 export const requestImageGenerationProcedure = publicProcedure
   .input(
@@ -10,7 +10,7 @@ export const requestImageGenerationProcedure = publicProcedure
       prompt: z.string(),
     })
   )
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input }: { input: { sessionId: string; toolCallId: string; prompt: string } }) => {
     console.log("[Image Gen] Creating request:", input.toolCallId);
 
     const imageGenRequest = await ImageGeneration.create({
@@ -47,19 +47,25 @@ async function processImageGeneration(toolCallId: string, prompt: string) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          prompt: `High-quality, professional product photography of ${prompt}. Studio lighting, clean white background, detailed and sharp focus.`,
+          prompt: `High-quality, professional product photography of ${prompt}. Elegant jewelry style, studio lighting, clean white background, detailed and sharp focus, realistic rendering.`,
           size: "1024x1024",
         }),
       }
     );
 
+    console.log("[Image Gen] Response status:", response.status);
+
     if (!response.ok) {
-      throw new Error(`Image API returned ${response.status}`);
+      const errorText = await response.text();
+      console.error("[Image Gen] API error:", errorText);
+      throw new Error(`Image API returned ${response.status}: ${errorText}`);
     }
 
     const data = await response.json();
+    console.log("[Image Gen] Response data keys:", Object.keys(data));
 
-    if (!data.image?.base64Data) {
+    if (!data.image || !data.image.base64Data) {
+      console.error("[Image Gen] Invalid data structure:", JSON.stringify(data).substring(0, 200));
       throw new Error("Invalid image data received from API");
     }
 

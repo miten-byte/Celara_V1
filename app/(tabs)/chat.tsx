@@ -31,7 +31,8 @@ export default function ChatScreen() {
   const productsQuery = trpc.products.list.useQuery();
 
   const [feedbackGiven, setFeedbackGiven] = useState<{ [key: string]: boolean }>({});
-  const [generatedImages, setGeneratedImages] = useState<{ [toolCallId: string]: { uri: string; description: string; status: string } }>({});
+  const [generatedImages, setGeneratedImages] = useState<{ [toolCallId: string]: { uri: string; description: string; status: string; error?: string } }>({});
+  const [imageLoadErrors, setImageLoadErrors] = useState<{ [toolCallId: string]: boolean }>({});
   
   const sessionId = useMemo(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
   
@@ -170,14 +171,6 @@ export default function ChatScreen() {
           console.log("[Chat] Design generation tool called:", toolCallId, params.description);
           
           try {
-            const result = await requestImageMutation.mutateAsync({
-              sessionId,
-              toolCallId,
-              prompt: params.description,
-            });
-
-            console.log("[Chat] Image request created:", result);
-
             setGeneratedImages(prev => ({
               ...prev,
               [toolCallId]: {
@@ -187,10 +180,27 @@ export default function ChatScreen() {
               },
             }));
 
-            return JSON.stringify({ toolCallId, status: "pending", message: `Generating custom design for: ${params.description}` });
+            const result = await requestImageMutation.mutateAsync({
+              sessionId,
+              toolCallId,
+              prompt: params.description,
+            });
+
+            console.log("[Chat] Image request created:", result);
+
+            return JSON.stringify({ toolCallId, status: "pending", message: `I'm creating a custom design based on your description. This may take a moment...` });
           } catch (error) {
             console.error("[Chat] Image request error:", error);
-            return `I apologize, but I'm having trouble generating the design right now. Please try again or contact our design team at design@celara.com for custom jewelry requests.`;
+            setGeneratedImages(prev => ({
+              ...prev,
+              [toolCallId]: {
+                uri: "",
+                description: params.description,
+                status: "failed",
+                error: error instanceof Error ? error.message : "Unknown error",
+              },
+            }));
+            return JSON.stringify({ toolCallId, status: "failed", error: "I apologize, but I'm having trouble generating the design right now. Please try again or contact our design team." });
           }
         },
       }),
@@ -208,8 +218,10 @@ export default function ChatScreen() {
 
     if (pendingImages.length === 0) return;
 
-    const interval = setInterval(() => {
-      pendingImages.forEach(async ([toolCallId, img]) => {
+    console.log("[Chat] Polling for", pendingImages.length, "images");
+
+    const checkStatus = async () => {
+      for (const [toolCallId, img] of pendingImages) {
         try {
           const { trpcClient } = await import("@/lib/trpc");
           const data = await trpcClient.ai.image.status.query({ toolCallId });
@@ -223,14 +235,26 @@ export default function ChatScreen() {
                 ...prev[toolCallId],
                 status: data.status,
                 uri: data.imageData || "",
+                error: data.error,
               },
             }));
           }
         } catch (error) {
           console.error("[Chat] Image status check error:", error);
+          setGeneratedImages(prev => ({
+            ...prev,
+            [toolCallId]: {
+              ...prev[toolCallId],
+              status: "failed",
+              error: error instanceof Error ? error.message : "Status check failed",
+            },
+          }));
         }
-      });
-    }, 2000);
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 3000);
 
     return () => clearInterval(interval);
   }, [generatedImages]);
@@ -407,32 +431,43 @@ export default function ChatScreen() {
 
                           const imageData = generatedImages[toolCallId];
                           
+                          if (!imageData) {
+                            return null;
+                          }
+
                           return (
                             <View key={`${message.id}-${index}`} style={styles.designResult}>
-                              {imageData?.status === "completed" && imageData.uri ? (
+                              {imageData.status === "completed" && imageData.uri && !imageLoadErrors[toolCallId] ? (
                                 <>
                                   <Image
                                     source={{ uri: imageData.uri }}
                                     style={styles.designImage}
                                     resizeMode="contain"
+                                    onError={(e) => {
+                                      console.error("[Chat] Image load error for URI:", imageData.uri.substring(0, 50));
+                                      setImageLoadErrors(prev => ({ ...prev, [toolCallId]: true }));
+                                    }}
+                                    onLoad={() => {
+                                      console.log("[Chat] Image loaded successfully:", toolCallId);
+                                    }}
                                   />
                                   <Text style={styles.designDescription}>
                                     {imageData.description}
                                   </Text>
                                 </>
-                              ) : imageData?.status === "failed" ? (
+                              ) : imageData.status === "failed" || imageLoadErrors[toolCallId] ? (
                                 <View style={styles.toolError}>
                                   <Text style={styles.toolErrorText}>
-                                    Failed to generate design. Please try again.
+                                    {imageData.error || "Failed to generate or load design. Please try again."}
                                   </Text>
                                 </View>
                               ) : (
                                 <View style={styles.toolCall}>
                                   <ActivityIndicator size="small" color={Colors.light.primary} />
                                   <Text style={styles.toolText}>
-                                    {imageData?.status === "processing" 
-                                      ? "Processing your design..." 
-                                      : "Preparing to generate design..."}
+                                    {imageData.status === "processing" 
+                                      ? "Creating your custom design..." 
+                                      : "Preparing design generation..."}
                                   </Text>
                                 </View>
                               )}

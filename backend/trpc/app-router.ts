@@ -12,6 +12,10 @@ import { deleteProductProcedure } from "./routes/products/delete/route";
 import { bulkUploadDiamondsProcedure } from "./routes/diamonds/bulk-upload/route";
 import { listDiamondsProcedure } from "./routes/diamonds/list/route";
 import { getDiamondProcedure } from "./routes/diamonds/get/route";
+import { chatProcedure } from "./routes/ai/chat/route";
+import { generateImageProcedure } from "./routes/ai/generate-image/route";
+import { getChatProcedure } from "./routes/ai/get-chat/route";
+import { listChatsProcedure } from "./routes/ai/list-chats/route";
 
 export const appRouter = createTRPCRouter({
   example: createTRPCRouter({
@@ -36,6 +40,12 @@ export const appRouter = createTRPCRouter({
     list: listDiamondsProcedure,
     get: getDiamondProcedure,
     bulkUpload: bulkUploadDiamondsProcedure,
+  }),
+  ai: createTRPCRouter({
+    chat: chatProcedure,
+    generateImage: generateImageProcedure,
+    getChat: getChatProcedure,
+    listChats: listChatsProcedure,
   }),
 });
 

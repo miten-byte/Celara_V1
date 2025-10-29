@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,336 +6,117 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-  Image,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Send, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react-native";
-import { createRorkTool, useRorkAgent } from "@rork/toolkit-sdk";
-import { z } from "zod";
-import { useRouter } from "expo-router";
-
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Send, Sparkles } from "lucide-react-native";
+import { Image } from "expo-image";
 import Colors from "@/constants/colors";
-import { useWishlist } from "@/contexts/WishlistContext";
 import { trpc } from "@/lib/trpc";
 
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  imageUrl?: string;
+  timestamp: Date;
+};
+
 export default function ChatScreen() {
-  console.log("[Chat] Rendering chat screen");
-  const [input, setInput] = useState("");
+  const insets = useSafeAreaInsets();
+  const [message, setMessage] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [chatId, setChatId] = useState<string | undefined>(undefined);
+  const [userId] = useState<string>("user-" + Date.now());
   const scrollViewRef = useRef<ScrollView>(null);
-  const router = useRouter();
-  const { toggleWishlist, isInWishlist } = useWishlist();
-  
-  const productsQuery = trpc.products.list.useQuery();
 
-  const [feedbackGiven, setFeedbackGiven] = useState<{ [key: string]: boolean }>({});
-  const [generatedImages, setGeneratedImages] = useState<{ [toolCallId: string]: { uri: string; description: string; status: string; error?: string } }>({});
-  const [imageLoadErrors, setImageLoadErrors] = useState<{ [toolCallId: string]: boolean }>({});
-  
-  const sessionId = useMemo(() => `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, []);
-  
-  const saveConversationMutation = trpc.ai.conversation.save.useMutation();
-  const feedbackMutation = trpc.ai.conversation.feedback.useMutation();
-  const requestImageMutation = trpc.ai.image.request.useMutation();
-
-  const { messages, error, sendMessage } = useRorkAgent({
-    tools: {
-      searchProducts: createRorkTool({
-        description: "Search for jewelry products by name, category, or characteristics like shape, metal, price range",
-        zodSchema: z.object({
-          query: z.string().describe("Search query for products"),
-          category: z.enum(["Engagement Rings", "Wedding Bands", "Earrings", "Necklaces", "Bracelets", "Loose Diamonds"]).optional().describe("Filter by category"),
-          maxPrice: z.number().optional().describe("Maximum price in dollars"),
-          minPrice: z.number().optional().describe("Minimum price in dollars"),
-        }),
-        execute(params) {
-          const data = productsQuery.data;
-          if (!data || !Array.isArray(data.products)) {
-            return JSON.stringify({ error: "No products available" });
-          }
-          
-          let filtered = data.products;
-
-          if (params.category) {
-            filtered = filtered.filter(p => p.category === params.category);
-          }
-
-          if (params.minPrice !== undefined) {
-            filtered = filtered.filter(p => p.price >= params.minPrice!);
-          }
-
-          if (params.maxPrice !== undefined) {
-            filtered = filtered.filter(p => p.price <= params.maxPrice!);
-          }
-
-          if (params.query) {
-            const query = params.query.toLowerCase();
-            filtered = filtered.filter(p => 
-              p.name.toLowerCase().includes(query) ||
-              p.description.toLowerCase().includes(query) ||
-              p.category.toLowerCase().includes(query) ||
-              p.metal?.toLowerCase().includes(query) ||
-              p.shape?.toLowerCase().includes(query)
-            );
-          }
-
-          const results = filtered.slice(0, 5).map(p => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            category: p.category,
-            metal: p.metal,
-            carat: p.carat,
-            inStock: p.inStock,
-          }));
-          
-          return JSON.stringify(results, null, 2);
+  const chatMutation = trpc.ai.chat.useMutation({
+    onSuccess: (data: { chatId: string; message: string; messages: Message[] }) => {
+      console.log("[Chat] Success:", data);
+      setChatId(data.chatId);
+      setMessages(data.messages as Message[]);
+    },
+    onError: (error: Error) => {
+      console.error("[Chat] Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, I encountered an error. Please try again.",
+          timestamp: new Date(),
         },
-      }),
-      viewProduct: createRorkTool({
-        description: "Navigate to view a specific product details page",
-        zodSchema: z.object({
-          productId: z.string().describe("The ID of the product to view"),
-        }),
-        execute(params) {
-          router.push(`/product/${params.productId}`);
-          return `Opening product ${params.productId}`;
-        },
-      }),
-      addToWishlist: createRorkTool({
-        description: "Add a product to the user wishlist",
-        zodSchema: z.object({
-          productId: z.string().describe("The ID of the product to add to wishlist"),
-        }),
-        execute(params) {
-          if (!isInWishlist(params.productId)) {
-            toggleWishlist(params.productId);
-            return "Added to wishlist successfully";
-          }
-          return "Product is already in your wishlist";
-        },
-      }),
-      searchKnowledge: createRorkTool({
-        description: "Search the jewelry knowledge base for specific information about diamonds, jewelry care, styles, metals, certifications, and more. Use this for detailed expert knowledge.",
-        zodSchema: z.object({
-          query: z.string().describe("Search query for the knowledge base"),
-          category: z.string().optional().describe("Category to filter by: diamond-education, metal-types, jewelry-care, sizing-guide, certification, customization, pricing, lab-grown-vs-mined, ring-styles, earring-styles, necklace-styles, bracelet-styles, pendant-styles, gemstone-properties, design-trends, maintenance, general"),
-        }),
-        async execute(params) {
-          try {
-            const { trpcClient } = await import("@/lib/trpc");
-            const result = await trpcClient.ai.knowledge.search.query(params);
-            
-            if (result.results && result.results.length > 0) {
-              const knowledge = result.results.map((k: any) => ({
-                title: k.title,
-                content: k.content,
-                category: k.category,
-              }));
-              
-              return JSON.stringify(knowledge, null, 2);
-            }
-            
-            return JSON.stringify({ message: "No specific knowledge found. Please provide general guidance based on common jewelry expertise." });
-          } catch (error) {
-            console.error("Knowledge search error:", error);
-            return JSON.stringify({ error: "Failed to search knowledge base" });
-          }
-        },
-      }),
-      getLabGrownInfo: createRorkTool({
-        description: "Get quick information about lab-grown diamonds and Celara philosophy",
-        zodSchema: z.object({
-          topic: z.enum(["benefits", "quality", "sustainability", "certification", "pricing"]).optional(),
-        }),
-        execute(params) {
-          const info = {
-            benefits: "Lab-grown diamonds are chemically, physically, and optically identical to mined diamonds. They offer exceptional value, ethical sourcing, and environmental responsibility.",
-            quality: "All Celara lab-grown diamonds meet the same strict grading standards as mined diamonds, certified by IGI or other recognized gemological institutes.",
-            sustainability: "Lab-grown diamonds use significantly less water, generate less waste, and have a smaller carbon footprint compared to traditional mining.",
-            certification: "Each diamond comes with certification from recognized institutions like IGI, ensuring authenticity and quality.",
-            pricing: "Lab-grown diamonds typically cost 30-40% less than mined diamonds of comparable quality, allowing you to get a larger or higher-quality stone for your budget.",
-          };
-          
-          return params.topic ? info[params.topic] : JSON.stringify(info, null, 2);
-        },
-      }),
-      generateDesign: createRorkTool({
-        description: "Generate a custom jewelry design based on user description. Use this when user wants to create, design, or visualize a custom piece of jewelry.",
-        zodSchema: z.object({
-          description: z.string().describe("Detailed description of the jewelry design including type (ring, necklace, earring, etc.), style, materials, gemstones, and any specific features"),
-        }),
-        async execute(params: { description: string }) {
-          const toolCallId = `design-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-          console.log("[Chat] Design generation tool called:", toolCallId, params.description);
-          
-          try {
-            setGeneratedImages(prev => ({
-              ...prev,
-              [toolCallId]: {
-                uri: "",
-                description: params.description,
-                status: "pending",
-              },
-            }));
-
-            const result = await requestImageMutation.mutateAsync({
-              sessionId,
-              toolCallId,
-              prompt: params.description,
-            });
-
-            console.log("[Chat] Image request created:", result);
-
-            return JSON.stringify({ toolCallId, status: "pending", message: `I'm creating a custom design based on your description. This may take a moment...` });
-          } catch (error) {
-            console.error("[Chat] Image request error:", error);
-            setGeneratedImages(prev => ({
-              ...prev,
-              [toolCallId]: {
-                uri: "",
-                description: params.description,
-                status: "failed",
-                error: error instanceof Error ? error.message : "Unknown error",
-              },
-            }));
-            return JSON.stringify({ toolCallId, status: "failed", error: "I apologize, but I'm having trouble generating the design right now. Please try again or contact our design team." });
-          }
-        },
-      }),
+      ]);
     },
   });
+
+  const generateImageMutation = trpc.ai.generateImage.useMutation({
+    onSuccess: (data: { imageUrl: string; id: string }) => {
+      console.log("[Image] Generated:", data);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Here's your image!",
+          imageUrl: data.imageUrl,
+          timestamp: new Date(),
+        },
+      ]);
+    },
+    onError: (error: Error) => {
+      console.error("[Image] Error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Sorry, I couldn't generate the image. Please try again.",
+          timestamp: new Date(),
+        },
+      ]);
+    },
+  });
+
+  const handleSend = () => {
+    if (!message.trim()) return;
+
+    const userMessage: Message = {
+      role: "user",
+      content: message,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setMessage("");
+
+    if (message.toLowerCase().includes("generate image") || message.toLowerCase().includes("create image")) {
+      const prompt = message.replace(/generate image|create image/gi, "").trim();
+      generateImageMutation.mutate({ prompt: prompt || message });
+    } else {
+      chatMutation.mutate({
+        userId,
+        message,
+        chatId,
+      });
+    }
+  };
 
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
-  useEffect(() => {
-    const pendingImages = Object.entries(generatedImages).filter(
-      ([_, img]) => img.status === "pending" || img.status === "processing"
-    );
-
-    if (pendingImages.length === 0) return;
-
-    console.log("[Chat] Polling for", pendingImages.length, "images");
-
-    const checkStatus = async () => {
-      for (const [toolCallId, img] of pendingImages) {
-        try {
-          const { trpcClient } = await import("@/lib/trpc");
-          const data = await trpcClient.ai.image.status.query({ toolCallId });
-
-          if (data && data.status !== img.status) {
-            console.log("[Chat] Image status updated:", toolCallId, data.status);
-            
-            setGeneratedImages(prev => ({
-              ...prev,
-              [toolCallId]: {
-                ...prev[toolCallId],
-                status: data.status,
-                uri: data.imageData || "",
-                error: data.error,
-              },
-            }));
-          }
-        } catch (error) {
-          console.error("[Chat] Image status check error:", error);
-          setGeneratedImages(prev => ({
-            ...prev,
-            [toolCallId]: {
-              ...prev[toolCallId],
-              status: "failed",
-              error: error instanceof Error ? error.message : "Status check failed",
-            },
-          }));
-        }
-      }
-    };
-
-    checkStatus();
-    const interval = setInterval(checkStatus, 3000);
-
-    return () => clearInterval(interval);
-  }, [generatedImages]);
-
-  const handleSend = () => {
-    if (input.trim()) {
-      const message = input.trim();
-      sendMessage(message);
-      setInput("");
-      
-      saveConversationMutation.mutate({
-        sessionId,
-        message: {
-          role: "user",
-          content: message,
-        },
-      });
-    }
-  };
-  
-  const handleFeedback = (messageId: string, messageIndex: number, rating: "helpful" | "not-helpful", comment?: string) => {
-    if (feedbackGiven[messageId]) return;
-    
-    setFeedbackGiven(prev => ({ ...prev, [messageId]: true }));
-    
-    feedbackMutation.mutate({
-      sessionId,
-      messageIndex,
-      rating,
-      comment,
-    });
-    
-    console.log("[Chat] Feedback submitted:", { messageIndex, rating });
-  };
-  
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === "assistant") {
-        const textContent = lastMessage.parts
-          .filter(p => p.type === "text")
-          .map(p => (p as any).text)
-          .join(" ");
-        
-        const toolsUsed = lastMessage.parts
-          .filter(p => p.type === "tool")
-          .map(p => (p as any).toolName);
-        
-        if (textContent) {
-          saveConversationMutation.mutate({
-            sessionId,
-            message: {
-              role: "assistant",
-              content: textContent,
-              toolsUsed,
-            },
-          });
-        }
-      }
-    }
-  }, [messages]);
+  const isLoading = chatMutation.isPending || generateImageMutation.isPending;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.iconContainer}>
-            <Sparkles color={Colors.light.primary} size={24} />
-          </View>
-          <View>
-            <Text style={styles.headerTitle}>Celara AI</Text>
-            <Text style={styles.headerSubtitle}>Your Jewelry Consultant</Text>
-          </View>
-        </View>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Sparkles color={Colors.light.primary} size={24} />
+        <Text style={styles.headerTitle}>AI Assistant</Text>
       </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardView}
-        keyboardVerticalOffset={0}
+        style={styles.keyboardAvoid}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
         <ScrollView
           ref={scrollViewRef}
@@ -345,198 +126,52 @@ export default function ChatScreen() {
         >
           {messages.length === 0 && (
             <View style={styles.emptyState}>
-              <Sparkles color={Colors.light.primary} size={48} />
-              <Text style={styles.emptyTitle}>Welcome to Celara AI</Text>
-              <Text style={styles.emptySubtitle}>
-                I&apos;m here to help you find the perfect lab-grown jewelry. Ask me about products, prices, or design your dream piece!
+              <Sparkles color={Colors.light.textSecondary} size={48} />
+              <Text style={styles.emptyTitle}>Welcome to AI Chat!</Text>
+              <Text style={styles.emptyDescription}>
+                Ask me anything or say &quot;generate image&quot; followed by a description
               </Text>
-              <View style={styles.suggestionsContainer}>
-                <TouchableOpacity
-                  style={styles.suggestionChip}
-                  onPress={() => sendMessage("Show me engagement rings under $10,000")}
-                >
-                  <Text style={styles.suggestionText}>Engagement rings under $10k</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.suggestionChip}
-                  onPress={() => sendMessage("Design a custom rose gold engagement ring")}
-                >
-                  <Text style={styles.suggestionText}>Design custom jewelry</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.suggestionChip}
-                  onPress={() => sendMessage("Tell me about lab-grown diamonds")}
-                >
-                  <Text style={styles.suggestionText}>About lab-grown diamonds</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           )}
 
-          {messages.map((message, messageIndex) => (
-            <View key={message.id} style={styles.messageWrapper}>
+          {messages.map((msg, index) => (
+            <View
+              key={index}
+              style={[
+                styles.messageWrapper,
+                msg.role === "user" ? styles.userMessageWrapper : styles.assistantMessageWrapper,
+              ]}
+            >
               <View
                 style={[
                   styles.messageBubble,
-                  message.role === "user" ? styles.userBubble : styles.aiBubble,
+                  msg.role === "user" ? styles.userMessage : styles.assistantMessage,
                 ]}
               >
-                {message.parts.map((part, index) => {
-                  if (part.type === "text") {
-                    return (
-                      <Text
-                        key={`${message.id}-${index}`}
-                        style={[
-                          styles.messageText,
-                          message.role === "user" ? styles.userText : styles.aiText,
-                        ]}
-                      >
-                        {part.text}
-                      </Text>
-                    );
-                  }
-
-                  if (part.type === "tool") {
-                    const toolName = part.toolName;
-
-                    switch (part.state) {
-                      case "input-streaming":
-                      case "input-available":
-                        return (
-                          <View key={`${message.id}-${index}`} style={styles.toolCall}>
-                            <ActivityIndicator size="small" color={Colors.light.primary} />
-                            <Text style={styles.toolText}>
-                              {toolName === "searchProducts" && "Searching products..."}
-                              {toolName === "viewProduct" && "Opening product..."}
-                              {toolName === "addToWishlist" && "Adding to wishlist..."}
-                              {toolName === "searchKnowledge" && "Searching jewelry knowledge base..."}
-                              {toolName === "getLabGrownInfo" && "Getting information..."}
-                              {toolName === "generateDesign" && "Generating your custom design..."}
-                            </Text>
-                          </View>
-                        );
-
-                      case "output-available":
-                        if (toolName === "generateDesign") {
-                          let toolCallId: string | undefined;
-                          try {
-                            const output = typeof part.output === "string" ? JSON.parse(part.output) : part.output;
-                            toolCallId = output?.toolCallId;
-                          } catch (e) {
-                            console.log("[Chat] Could not parse tool output", e);
-                          }
-
-                          if (!toolCallId) {
-                            return null;
-                          }
-
-                          const imageData = generatedImages[toolCallId];
-                          
-                          if (!imageData) {
-                            console.log("[Chat] No image data found for toolCallId:", toolCallId);
-                            return null;
-                          }
-
-                          return (
-                            <View key={`${message.id}-${index}`} style={styles.designResult}>
-                              {imageData.status === "completed" && imageData.uri && !imageLoadErrors[toolCallId] ? (
-                                <>
-                                  <Image
-                                    source={{ uri: imageData.uri }}
-                                    style={styles.designImage}
-                                    resizeMode="contain"
-                                    onError={(e) => {
-                                      console.error("[Chat] Image load error:", e.nativeEvent.error);
-                                      console.error("[Chat] URI prefix:", imageData.uri.substring(0, 100));
-                                      setImageLoadErrors(prev => ({ ...prev, [toolCallId]: true }));
-                                    }}
-                                    onLoad={() => {
-                                      console.log("[Chat] Image loaded successfully:", toolCallId);
-                                    }}
-                                  />
-                                  <Text style={styles.designDescription}>
-                                    {imageData.description}
-                                  </Text>
-                                </>
-                              ) : imageData.status === "failed" || imageLoadErrors[toolCallId] ? (
-                                <View style={styles.toolError}>
-                                  <Text style={styles.toolErrorText}>
-                                    {imageData.error || "Failed to generate or load design. Please try again later."}
-                                  </Text>
-                                </View>
-                              ) : (
-                                <View style={styles.toolCall}>
-                                  <ActivityIndicator size="small" color={Colors.light.primary} />
-                                  <Text style={styles.toolText}>
-                                    {imageData.status === "processing" 
-                                      ? "Creating your custom design..." 
-                                      : "Preparing design generation..."}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                          );
-                        }
-                        return (
-                          <View key={`${message.id}-${index}`} style={styles.toolResult}>
-                            <Text style={styles.toolResultText}>
-                              {JSON.stringify(part.output, null, 2)}
-                            </Text>
-                          </View>
-                        );
-
-                      case "output-error":
-                        return (
-                          <View key={`${message.id}-${index}`} style={styles.toolError}>
-                            <Text style={styles.toolErrorText}>{part.errorText}</Text>
-                          </View>
-                        );
-                    }
-                  }
-
-                  return null;
-                })}
+                <Text
+                  style={[
+                    styles.messageText,
+                    msg.role === "user" ? styles.userMessageText : styles.assistantMessageText,
+                  ]}
+                >
+                  {msg.content}
+                </Text>
+                {msg.imageUrl && (
+                  <Image
+                    source={{ uri: msg.imageUrl }}
+                    style={styles.messageImage}
+                    contentFit="cover"
+                  />
+                )}
               </View>
-              
-              {message.role === "assistant" && (
-                <View style={styles.feedbackContainer}>
-                  <Text style={styles.feedbackLabel}>Was this helpful?</Text>
-                  <View style={styles.feedbackButtons}>
-                    <TouchableOpacity
-                      style={[
-                        styles.feedbackButton,
-                        feedbackGiven[message.id] && styles.feedbackButtonDisabled,
-                      ]}
-                      onPress={() => handleFeedback(message.id, messageIndex, "helpful")}
-                      disabled={feedbackGiven[message.id]}
-                    >
-                      <ThumbsUp
-                        color={feedbackGiven[message.id] ? Colors.light.textSecondary : Colors.light.primary}
-                        size={16}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.feedbackButton,
-                        feedbackGiven[message.id] && styles.feedbackButtonDisabled,
-                      ]}
-                      onPress={() => handleFeedback(message.id, messageIndex, "not-helpful")}
-                      disabled={feedbackGiven[message.id]}
-                    >
-                      <ThumbsDown
-                        color={feedbackGiven[message.id] ? Colors.light.textSecondary : Colors.light.primary}
-                        size={16}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
             </View>
           ))}
 
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Error: {error.message}</Text>
+          {isLoading && (
+            <View style={styles.loadingWrapper}>
+              <View style={styles.loadingBubble}>
+                <ActivityIndicator color={Colors.light.primary} />
+              </View>
             </View>
           )}
         </ScrollView>
@@ -545,27 +180,28 @@ export default function ChatScreen() {
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder="Ask about jewelry, diamonds, or prices..."
+              value={message}
+              onChangeText={setMessage}
+              placeholder="Type a message..."
               placeholderTextColor={Colors.light.textSecondary}
               multiline
               maxLength={500}
+              editable={!isLoading}
             />
             <TouchableOpacity
-              style={[styles.sendButton, !input.trim() && styles.sendButtonDisabled]}
+              style={[styles.sendButton, !message.trim() && styles.sendButtonDisabled]}
               onPress={handleSend}
-              disabled={!input.trim()}
+              disabled={!message.trim() || isLoading}
             >
               <Send
-                color={input.trim() ? Colors.light.white : Colors.light.textSecondary}
+                color={message.trim() ? Colors.light.white : Colors.light.textSecondary}
                 size={20}
               />
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -575,248 +211,139 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
   },
   header: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: Colors.light.white,
     borderBottomWidth: 1,
     borderBottomColor: Colors.light.border,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 12,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${Colors.light.primary}15`,
-    alignItems: "center",
-    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "700" as const,
     color: Colors.light.text,
-    letterSpacing: 0.5,
   },
-  headerSubtitle: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    marginTop: 2,
-  },
-  keyboardView: {
+  keyboardAvoid: {
     flex: 1,
   },
   messagesContainer: {
     flex: 1,
   },
   messagesContent: {
-    padding: 20,
-    paddingBottom: 10,
+    padding: 16,
+    paddingBottom: 80,
   },
   emptyState: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    paddingTop: 100,
+    gap: 12,
   },
   emptyTitle: {
     fontSize: 24,
     fontWeight: "700" as const,
     color: Colors.light.text,
-    marginTop: 20,
-    letterSpacing: 0.5,
+    marginTop: 16,
   },
-  emptySubtitle: {
-    fontSize: 15,
-    color: Colors.light.textSecondary,
-    textAlign: "center",
-    marginTop: 12,
-    lineHeight: 22,
-    maxWidth: 280,
-  },
-  suggestionsContainer: {
-    marginTop: 32,
-    gap: 12,
-    alignItems: "center",
-  },
-  suggestionChip: {
-    backgroundColor: Colors.light.white,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-  },
-  suggestionText: {
+  emptyDescription: {
     fontSize: 14,
-    color: Colors.light.text,
-    fontWeight: "600" as const,
+    color: Colors.light.textSecondary,
+    textAlign: "center" as const,
+    paddingHorizontal: 40,
   },
   messageWrapper: {
-    marginBottom: 16,
+    marginBottom: 12,
+  },
+  userMessageWrapper: {
+    alignItems: "flex-end" as const,
+  },
+  assistantMessageWrapper: {
+    alignItems: "flex-start" as const,
   },
   messageBubble: {
-    maxWidth: "85%",
-    padding: 14,
-    borderRadius: 18,
+    maxWidth: "80%",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
   },
-  userBubble: {
+  userMessage: {
     backgroundColor: Colors.light.primary,
-    alignSelf: "flex-end",
     borderBottomRightRadius: 4,
   },
-  aiBubble: {
+  assistantMessage: {
     backgroundColor: Colors.light.white,
-    alignSelf: "flex-start",
     borderBottomLeftRadius: 4,
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
   messageText: {
     fontSize: 15,
-    lineHeight: 21,
+    lineHeight: 20,
   },
-  userText: {
+  userMessageText: {
     color: Colors.light.white,
   },
-  aiText: {
+  assistantMessageText: {
     color: Colors.light.text,
   },
-  toolCall: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-  },
-  toolText: {
-    fontSize: 13,
-    color: Colors.light.primary,
-    fontStyle: "italic" as const,
-  },
-  toolResult: {
-    marginTop: 8,
-    padding: 10,
-    backgroundColor: Colors.light.background,
-    borderRadius: 8,
-  },
-  toolResultText: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-    fontFamily: Platform.select({ ios: "Menlo", android: "monospace" }),
-  },
-  toolError: {
-    marginTop: 8,
-    padding: 10,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 8,
-  },
-  toolErrorText: {
-    fontSize: 13,
-    color: "#DC2626",
-  },
-  errorContainer: {
-    padding: 12,
-    backgroundColor: "#FEE2E2",
-    borderRadius: 8,
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
     marginTop: 8,
   },
-  errorText: {
-    fontSize: 13,
-    color: "#DC2626",
+  loadingWrapper: {
+    alignItems: "flex-start" as const,
+    marginBottom: 12,
+  },
+  loadingBubble: {
+    backgroundColor: Colors.light.white,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
   },
   inputContainer: {
-    padding: 16,
+    position: "absolute" as const,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: Colors.light.white,
     borderTopWidth: 1,
     borderTopColor: Colors.light.border,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === "ios" ? 24 : 12,
   },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    backgroundColor: Colors.light.background,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    flexDirection: "row" as const,
+    alignItems: "flex-end" as const,
     gap: 8,
   },
   input: {
     flex: 1,
+    backgroundColor: Colors.light.background,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 15,
     color: Colors.light.text,
     maxHeight: 100,
-    paddingTop: 8,
-    paddingBottom: 8,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.light.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   sendButtonDisabled: {
-    backgroundColor: Colors.light.border,
-  },
-  designResult: {
-    marginTop: 12,
-    width: "100%",
-  },
-  designImage: {
-    width: "100%",
-    height: 280,
-    borderRadius: 12,
     backgroundColor: Colors.light.background,
-  },
-  designDescription: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    marginTop: 8,
-    lineHeight: 18,
-  },
-  getQuoteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.light.primary,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginTop: 12,
-    gap: 8,
-  },
-  getQuoteText: {
-    fontSize: 15,
-    fontWeight: "700" as const,
-    color: Colors.light.white,
-    letterSpacing: 0.5,
-  },
-  feedbackContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    gap: 12,
-  },
-  feedbackLabel: {
-    fontSize: 12,
-    color: Colors.light.textSecondary,
-  },
-  feedbackButtons: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  feedbackButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: `${Colors.light.primary}10`,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  feedbackButtonDisabled: {
-    opacity: 0.5,
   },
 });

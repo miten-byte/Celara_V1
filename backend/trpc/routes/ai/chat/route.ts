@@ -51,7 +51,7 @@ export const chatProcedure = publicProcedure
 
       const assistantMessage = completion.choices[0]?.message?.content || "I'm having trouble responding right now. Please try again.";
 
-      console.log("[Chat] OpenAI response:", assistantMessage);
+      console.log("[Chat] OpenAI response received successfully");
 
       chat.messages.push({
         role: "assistant",
@@ -66,9 +66,20 @@ export const chatProcedure = publicProcedure
         message: assistantMessage,
         messages: chat.messages,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Chat] Error:", error);
-      const errorMessage = "Sorry, I encountered an error. Please try again.";
+      console.error("[Chat] Error message:", error?.message);
+      console.error("[Chat] Error response:", error?.response?.data);
+      
+      let errorMessage = "Sorry, I encountered an error. Please try again.";
+      
+      if (error?.response?.status === 401) {
+        errorMessage = "OpenAI API key is invalid. Please check your configuration.";
+      } else if (error?.response?.status === 429) {
+        errorMessage = "Rate limit exceeded. Please try again later.";
+      } else if (error?.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
 
       chat.messages.push({
         role: "assistant",

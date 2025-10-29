@@ -29,14 +29,27 @@ export const generateImageProcedure = publicProcedure
         throw new Error("No image URL in response");
       }
 
-      console.log("[Image] Generated successfully:", imageUrl);
+      console.log("[Image] Generated successfully");
 
       return {
         imageUrl,
         id: Date.now().toString(),
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("[Image] Generation error:", error);
-      throw new Error("Failed to generate image. Please try again.");
+      console.error("[Image] Error message:", error?.message);
+      console.error("[Image] Error response:", error?.response?.data);
+      
+      let errorMessage = "Failed to generate image. Please try again.";
+      
+      if (error?.response?.status === 401) {
+        errorMessage = "OpenAI API key is invalid. Please check your configuration.";
+      } else if (error?.response?.status === 429) {
+        errorMessage = "Rate limit exceeded. Please try again later.";
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      throw new Error(errorMessage);
     }
   });

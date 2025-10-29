@@ -190,16 +190,18 @@ export default function ChatScreen() {
             }
 
             const data = await response.json();
-            console.log("[Chat] Image generation successful, data received:", {
+            console.log("[Chat] Image generation successful, full response:", JSON.stringify(data).substring(0, 200));
+            console.log("[Chat] Image data check:", {
               hasMimeType: !!data.image?.mimeType,
               hasBase64: !!data.image?.base64Data,
               base64Length: data.image?.base64Data?.length,
+              base64Prefix: data.image?.base64Data?.substring(0, 20),
             });
             
             setIsGeneratingDesign(false);
             
             if (!data.image?.base64Data || !data.image?.mimeType) {
-              console.error("[Chat] Invalid image data:", data);
+              console.error("[Chat] Invalid image data received:", JSON.stringify(data).substring(0, 500));
               throw new Error("Invalid image data received from API");
             }
             
@@ -427,10 +429,10 @@ export default function ChatScreen() {
                                 </View>
                               );
                             } else {
-                              console.error("[Chat] Invalid design output:", output);
+                              console.error("[Chat] Invalid design output:", JSON.stringify(output));
                               return (
                                 <View key={`${message.id}-${index}`} style={styles.toolError}>
-                                  <Text style={styles.toolErrorText}>Failed to generate design. Please try again.</Text>
+                                  <Text style={styles.toolErrorText}>Failed to generate design: {output.error || "Unknown error"}. Please try again.</Text>
                                 </View>
                               );
                             }

@@ -10,7 +10,7 @@ import {
   TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Search, SlidersHorizontal, X } from "lucide-react-native";
+import { Search, SlidersHorizontal, X, ArrowUpDown } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
@@ -26,9 +26,11 @@ export default function ShopScreen() {
   const [selectedShape, setSelectedShape] = useState<DiamondShape | "All">("All");
   const [showFilters, setShowFilters] = useState(false);
   const [priceRange, setPriceRange] = useState<"All" | "Under 5k" | "5k-10k" | "10k-20k" | "Over 20k">("All");
+  const [sortBy, setSortBy] = useState<"default" | "price-low" | "price-high" | "newest">("default");
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    let filtered = products.filter((product) => {
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
       const matchesShape = selectedShape === "All" || product.shape === selectedShape;
@@ -41,7 +43,17 @@ export default function ShopScreen() {
 
       return matchesSearch && matchesCategory && matchesShape && matchesPrice;
     });
-  }, [searchQuery, selectedCategory, selectedShape, priceRange]);
+
+    if (sortBy === "price-low") {
+      filtered.sort((a, b) => a.price - b.price);
+    } else if (sortBy === "price-high") {
+      filtered.sort((a, b) => b.price - a.price);
+    } else if (sortBy === "newest") {
+      filtered = filtered.filter(p => p.isNewArrival).concat(filtered.filter(p => !p.isNewArrival));
+    }
+
+    return filtered;
+  }, [searchQuery, selectedCategory, selectedShape, priceRange, sortBy]);
 
   const renderProductCard = (product: Product) => {
     return (
@@ -99,7 +111,62 @@ export default function ShopScreen() {
         >
           <SlidersHorizontal color={Colors.light.primary} size={20} />
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowSortMenu(!showSortMenu)}
+        >
+          <ArrowUpDown color={Colors.light.primary} size={20} />
+        </TouchableOpacity>
       </View>
+
+      {showSortMenu && (
+        <View style={styles.sortMenu}>
+          <TouchableOpacity
+            style={[styles.sortOption, sortBy === "default" && styles.sortOptionActive]}
+            onPress={() => {
+              setSortBy("default");
+              setShowSortMenu(false);
+            }}
+          >
+            <Text style={[styles.sortOptionText, sortBy === "default" && styles.sortOptionTextActive]}>
+              Default
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sortOption, sortBy === "price-low" && styles.sortOptionActive]}
+            onPress={() => {
+              setSortBy("price-low");
+              setShowSortMenu(false);
+            }}
+          >
+            <Text style={[styles.sortOptionText, sortBy === "price-low" && styles.sortOptionTextActive]}>
+              Price: Low to High
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sortOption, sortBy === "price-high" && styles.sortOptionActive]}
+            onPress={() => {
+              setSortBy("price-high");
+              setShowSortMenu(false);
+            }}
+          >
+            <Text style={[styles.sortOptionText, sortBy === "price-high" && styles.sortOptionTextActive]}>
+              Price: High to Low
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sortOption, sortBy === "newest" && styles.sortOptionActive]}
+            onPress={() => {
+              setSortBy("newest");
+              setShowSortMenu(false);
+            }}
+          >
+            <Text style={[styles.sortOptionText, sortBy === "newest" && styles.sortOptionTextActive]}>
+              Newest First
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {showFilters && (
         <ScrollView
@@ -347,5 +414,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: Colors.light.primary,
+  },
+  sortMenu: {
+    backgroundColor: Colors.light.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+  },
+  sortOption: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  sortOptionActive: {
+    backgroundColor: Colors.light.surface,
+  },
+  sortOptionText: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: Colors.light.text,
+  },
+  sortOptionTextActive: {
+    color: Colors.light.primary,
+    fontWeight: '600' as const,
   },
 });

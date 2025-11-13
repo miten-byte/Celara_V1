@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { Heart, ShoppingCart, Info, Award, Shield } from "lucide-react-native";
+import { Heart, ShoppingCart, Info, Award, Shield, Package, TruckIcon, RefreshCw, CheckCircle } from "lucide-react-native";
 
 import Colors from "@/constants/colors";
 import { products, metals, MetalType } from "@/mocks/jewelry";
@@ -224,14 +224,59 @@ export default function ProductDetailScreen() {
             </>
           )}
 
+          <View style={styles.divider} />
+
+          <Text style={styles.sectionTitle}>Trust & Quality</Text>
+          <View style={styles.trustBadgesContainer}>
+            <View style={styles.trustBadge}>
+              <CheckCircle color={Colors.light.success} size={20} />
+              <Text style={styles.trustBadgeText}>Lab-Grown Diamond</Text>
+            </View>
+            <View style={styles.trustBadge}>
+              <Shield color={Colors.light.success} size={20} />
+              <Text style={styles.trustBadgeText}>IGI Certified</Text>
+            </View>
+            <View style={styles.trustBadge}>
+              <Award color={Colors.light.success} size={20} />
+              <Text style={styles.trustBadgeText}>Ethically Sourced</Text>
+            </View>
+            <View style={styles.trustBadge}>
+              <CheckCircle color={Colors.light.success} size={20} />
+              <Text style={styles.trustBadgeText}>Lifetime Warranty</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <Text style={styles.sectionTitle}>Delivery & Services</Text>
           <View style={styles.featuresContainer}>
             <View style={styles.featureItem}>
-              <Shield color={Colors.light.primary} size={20} />
-              <Text style={styles.featureText}>Lifetime Warranty</Text>
+              <TruckIcon color={Colors.light.primary} size={20} />
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureText}>Free Shipping</Text>
+                <Text style={styles.featureSubtext}>Worldwide delivery</Text>
+              </View>
+            </View>
+            <View style={styles.featureItem}>
+              <Package color={Colors.light.primary} size={20} />
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureText}>Luxury Packaging</Text>
+                <Text style={styles.featureSubtext}>Beautiful gift box</Text>
+              </View>
+            </View>
+            <View style={styles.featureItem}>
+              <RefreshCw color={Colors.light.primary} size={20} />
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureText}>30-Day Returns</Text>
+                <Text style={styles.featureSubtext}>Money-back guarantee</Text>
+              </View>
             </View>
             <View style={styles.featureItem}>
               <Info color={Colors.light.primary} size={20} />
-              <Text style={styles.featureText}>Free Resizing</Text>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureText}>Free Resizing</Text>
+                <Text style={styles.featureSubtext}>Lifetime service</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -510,24 +555,56 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.textSecondary,
   },
-  featuresContainer: {
+  trustBadgesContainer: {
     flexDirection: 'row' as const,
-    gap: 16,
-    marginTop: 24,
+    flexWrap: 'wrap' as const,
+    gap: 12,
   },
-  featureItem: {
-    flex: 1,
+  trustBadge: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: 8,
     backgroundColor: Colors.light.surface,
-    padding: 12,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(5, 150, 105, 0.2)',
   },
-  featureText: {
-    fontSize: 13,
+  trustBadgeText: {
+    fontSize: 12,
     fontWeight: '600' as const,
     color: Colors.light.text,
+  },
+  featuresContainer: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 12,
+  },
+  featureItem: {
+    width: '48%',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    backgroundColor: Colors.light.surface,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  featureTextContainer: {
+    flex: 1,
+  },
+  featureText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.light.text,
+    marginBottom: 2,
+  },
+  featureSubtext: {
+    fontSize: 11,
+    fontWeight: '400' as const,
+    color: Colors.light.textSecondary,
   },
   bottomBar: {
     backgroundColor: Colors.light.white,

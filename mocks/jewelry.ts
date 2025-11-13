@@ -5,6 +5,16 @@ export type Cut = 'Ideal' | 'Excellent' | 'Very Good' | 'Good';
 export type Color = 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J';
 export type Clarity = 'FL' | 'IF' | 'VVS1' | 'VVS2' | 'VS1' | 'VS2' | 'SI1' | 'SI2';
 
+export interface Review {
+  id: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: string;
+  verified: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -24,6 +34,9 @@ export interface Product {
   isFeatured?: boolean;
   isNewArrival?: boolean;
   isBestseller?: boolean;
+  rating?: number;
+  reviewCount?: number;
+  reviews?: Review[];
 }
 
 export const products: Product[] = [
@@ -271,6 +284,167 @@ export const products: Product[] = [
     clarity: 'VS1',
     certification: 'IGI',
     inStock: true,
+  },
+  {
+    id: '13',
+    name: 'Round Brilliant Diamond Studs',
+    category: 'Earrings',
+    price: 4500,
+    image: 'https://images.unsplash.com/photo-1630019852942-f89202989778?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1630019852942-f89202989778?w=800',
+    ],
+    description: 'Timeless round brilliant diamond studs in 18K white gold. Perfect for everyday elegance or special occasions.',
+    shape: 'Round',
+    metal: '18K White Gold',
+    carat: 1.2,
+    cut: 'Ideal',
+    color: 'G',
+    clarity: 'VS2',
+    certification: 'IGI',
+    inStock: true,
+    isBestseller: true,
+  },
+  {
+    id: '14',
+    name: 'Three Stone Diamond Ring',
+    category: 'Engagement Rings',
+    price: 14800,
+    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800',
+      'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?w=800',
+    ],
+    description: 'Stunning three stone engagement ring representing your past, present, and future. Center diamond flanked by two smaller stones.',
+    shape: 'Round',
+    metal: '18K White Gold',
+    carat: 2.5,
+    cut: 'Excellent',
+    color: 'F',
+    clarity: 'VVS2',
+    certification: 'IGI',
+    inStock: true,
+    isNewArrival: true,
+    isFeatured: true,
+  },
+  {
+    id: '15',
+    name: 'Diamond Drop Earrings',
+    category: 'Earrings',
+    price: 6800,
+    image: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800',
+    ],
+    description: 'Elegant drop earrings featuring cascading diamonds. Perfect for formal events and special celebrations.',
+    shape: 'Round',
+    metal: '18K White Gold',
+    carat: 1.8,
+    cut: 'Excellent',
+    color: 'E',
+    clarity: 'VS1',
+    certification: 'IGI',
+    inStock: true,
+    isNewArrival: true,
+  },
+  {
+    id: '16',
+    name: 'Infinity Diamond Bracelet',
+    category: 'Bracelets',
+    price: 8200,
+    image: 'https://images.unsplash.com/photo-1611591437611-e27bbb2e7d59?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1611591437611-e27bbb2e7d59?w=800',
+    ],
+    description: 'Beautiful infinity symbol bracelet adorned with brilliant diamonds. Symbolizes eternal love and connection.',
+    shape: 'Round',
+    metal: '18K Rose Gold',
+    carat: 1.5,
+    cut: 'Excellent',
+    color: 'G',
+    clarity: 'VS2',
+    certification: 'IGI',
+    inStock: true,
+    isBestseller: true,
+  },
+  {
+    id: '17',
+    name: 'Marquise Diamond Ring',
+    category: 'Engagement Rings',
+    price: 13500,
+    image: 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800',
+    ],
+    description: 'Unique marquise cut diamond ring with vintage-inspired details. Elongates the finger for a flattering look.',
+    shape: 'Marquise',
+    metal: '18K Yellow Gold',
+    carat: 1.9,
+    cut: 'Excellent',
+    color: 'F',
+    clarity: 'VS1',
+    certification: 'IGI',
+    inStock: true,
+    isFeatured: true,
+  },
+  {
+    id: '18',
+    name: 'Asscher Cut Diamond Ring',
+    category: 'Engagement Rings',
+    price: 18200,
+    image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800',
+    ],
+    description: 'Art deco inspired asscher cut diamond ring. Features a unique step-cut that showcases exceptional clarity.',
+    shape: 'Asscher',
+    metal: '18K White Gold',
+    carat: 2.2,
+    cut: 'Excellent',
+    color: 'D',
+    clarity: 'IF',
+    certification: 'IGI',
+    inStock: true,
+    isNewArrival: true,
+  },
+  {
+    id: '19',
+    name: 'Classic Diamond Bangle',
+    category: 'Bracelets',
+    price: 9500,
+    image: 'https://images.unsplash.com/photo-1611591437611-e27bbb2e7d59?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1611591437611-e27bbb2e7d59?w=800',
+    ],
+    description: 'Elegant diamond-studded bangle in 18K gold. A timeless piece that complements any outfit.',
+    shape: 'Round',
+    metal: '18K Yellow Gold',
+    carat: 2.8,
+    cut: 'Excellent',
+    color: 'G',
+    clarity: 'VS1',
+    certification: 'IGI',
+    inStock: true,
+  },
+  {
+    id: '20',
+    name: 'Diamond Heart Pendant',
+    category: 'Necklaces',
+    price: 5200,
+    image: 'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?w=800',
+    images: [
+      'https://images.unsplash.com/photo-1506630448388-4e683c67ddb0?w=800',
+    ],
+    description: 'Romantic heart-shaped diamond pendant. Perfect gift to express your love and affection.',
+    shape: 'Round',
+    metal: '18K Rose Gold',
+    carat: 0.9,
+    cut: 'Excellent',
+    color: 'F',
+    clarity: 'VS2',
+    certification: 'IGI',
+    inStock: true,
+    isBestseller: true,
   },
 ];
 

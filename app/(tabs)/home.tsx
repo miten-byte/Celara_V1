@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Sparkles, Heart, Shield, Gem, Menu, Star, Package, TrendingUp } from "lucide-react-native";
+import { ChevronRight, Sparkles, Heart, Shield, Gem, Menu, Star, Package, TrendingUp, Play } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ResizeMode, Video } from "expo-av";
 import DrawerMenu from "@/components/DrawerMenu";
 
 import Colors from "@/constants/colors";
@@ -26,6 +28,9 @@ export default function HomeScreen() {
   const bestSellers = products.filter((p) => p.isBestseller).slice(0, 6);
   const newArrivals = products.filter((p) => p.isNewArrival).slice(0, 6);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const videoRef = useRef<Video>(null);
 
   const renderCategoryCard = (category: string, index: number) => {
     const categoryImage = products.find((p) => p.category === category)?.image;
@@ -82,32 +87,45 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
       >
         <View style={styles.heroSection}>
-          <LinearGradient
-            colors={['#1A0B2E', '#4A0E4E', '#1A0B2E']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroGradient}
-          >
-            <View style={styles.brandContainer}>
-              <Text style={styles.brandName}>LUMIORO</Text>
-              <Text style={styles.tagline}>Lab-Grown Luxury, Direct to You</Text>
-            </View>
-
-            <View style={styles.heroContent}>
-              <Text style={styles.heroTitle}>Lab-Grown Luxury</Text>
-              <Text style={styles.heroSubtitle}>
-                Ethically created diamonds that match nature&apos;s perfection.
-                {"\n"}Same fire. Same brilliance. Better future.
-              </Text>
-              <TouchableOpacity
-                style={styles.heroButton}
-                onPress={() => router.push('/(tabs)/shop')}
-              >
-                <Text style={styles.heroButtonText}>Explore Collection</Text>
-                <Sparkles color={Colors.light.primary} size={18} />
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
+          <View style={styles.videoContainer}>
+            {!videoError && Platform.OS !== 'web' ? (
+              <Video
+                ref={videoRef}
+                source={{ uri: "https://player.vimeo.com/external/371433846.sd.mp4?s=236f93e679c1c0e8b1d6bdfa29210e8e4a5d7088&profile_id=165" }}
+                style={styles.heroVideo}
+                resizeMode={ResizeMode.COVER}
+                shouldPlay={isVideoPlaying}
+                isLooping
+                isMuted
+                onError={() => setVideoError(true)}
+              />
+            ) : (
+              <Image
+                source={{ uri: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&q=80" }}
+                style={styles.heroVideo}
+              />
+            )}
+            
+            <LinearGradient
+              colors={['rgba(26, 11, 46, 0.7)', 'rgba(74, 14, 78, 0.8)', 'rgba(26, 11, 46, 0.9)']}
+              style={styles.videoOverlay}
+            >
+              <View style={styles.heroContent}>
+                <Text style={styles.heroTitle}>Lab-Grown Luxury</Text>
+                <Text style={styles.heroSubtitle}>
+                  Ethically created diamonds that match nature&apos;s perfection.
+                  {"\n"}Same fire. Same brilliance. Better future.
+                </Text>
+                <TouchableOpacity
+                  style={styles.heroButton}
+                  onPress={() => router.push('/(tabs)/shop')}
+                >
+                  <Text style={styles.heroButtonText}>Shop This Collection</Text>
+                  <Sparkles color={Colors.light.primary} size={18} />
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </View>
         </View>
 
         <View style={styles.valuesSection}>
@@ -299,33 +317,27 @@ const styles = StyleSheet.create({
   heroSection: {
     marginBottom: 24,
   },
-  heroGradient: {
-    paddingHorizontal: 24,
-    paddingVertical: 56,
-    paddingBottom: 40,
+  videoContainer: {
+    height: 500,
+    position: 'relative' as const,
   },
-  brandContainer: {
+  heroVideo: {
+    width: '100%',
+    height: '100%',
+  },
+  videoOverlay: {
+    position: 'absolute' as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center' as const,
     alignItems: 'center' as const,
-    marginBottom: 48,
-  },
-  brandName: {
-    fontSize: 56,
-    fontWeight: '300' as const,
-    color: Colors.light.secondary,
-    letterSpacing: 8,
-    marginBottom: 16,
-    fontFamily: 'serif',
-  },
-  tagline: {
-    fontSize: 13,
-    color: Colors.light.white,
-    letterSpacing: 2.5,
-    fontWeight: '300' as const,
-    opacity: 0.85,
-    fontFamily: 'serif',
+    paddingHorizontal: 24,
   },
   heroContent: {
     alignItems: 'center' as const,
+    width: '100%',
   },
   heroTitle: {
     fontSize: 34,

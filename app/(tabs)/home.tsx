@@ -87,8 +87,8 @@ export default function HomeScreen() {
             style={styles.heroGradient}
           >
             <View style={styles.brandContainer}>
-              <Text style={styles.brandName}>CELARA</Text>
-              <Text style={styles.tagline}>Crafted by Science. Worn with Soul.</Text>
+              <Text style={styles.brandName}>LUMIORO</Text>
+              <Text style={styles.tagline}>Lab-Grown Luxury, Direct to You</Text>
             </View>
 
             <View style={styles.heroContent}>
